@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tour appversion="5.2.4" start="node1" apprev="15996">
+  <panorama id="node1">
+    <input leveltilesize="510" overlap="1" width="2048" leveltileurl="tiles/node1/cf_%c/l_%l/c_%x/tile_%y.jpg" height="2048" levelingpitch="0" levelbias="0.400" levelbiashidpi="0.400" levelingroll="0">
+      <level predecode="0" width="2048" preload="0" height="2048"/>
+      <level predecode="0" width="1024" preload="0" height="1024"/>
+      <level predecode="0" width="512" preload="0" height="512"/>
+      <level predecode="1" width="256" preload="1" height="256"/>
+      <preview strip="1" color="0x808080"/>
+    </input>
+    <view pannorth="0" fovmode="0">
+      <start fov="70" projection="4" pan="0" tilt="0"/>
+      <flyin fov="170" projection="9" pan="0" tilt="-90"/>
+      <min fov="5" pan="0" tilt="-90"/>
+      <max fov="120" scaletofit="1" fovfisheye="360" pan="360" tilt="90" fovstereographic="270"/>
+    </view>
+    <userdata author="" datetime="" description="" info="" comment="" longitude="" customnodeid="" copyright="" latitude="" tags="Desktop" title="" source=""/>
+    <hotspots width="180" wordwrap="1" height="20">
+      <label bordercolor="0x000000" width="180" textalpha="1" background="1" borderradius="1" backgroundcolor="0xffffff" wordwrap="1" height="20" textcolor="0x000000" border="1" enabled="1" backgroundalpha="1" borderalpha="1"/>
+      <polystyle bordercolor="0x0000ff" backgroundcolor="0x0000ff" mode="0" handcursor="1" backgroundalpha="0.2509803921568627" borderalpha="1"/>
+      <hotspot url="{node2}" skinid="ht_node" description="" id="Point01" target="-1.3/-0.3/70.0" pan="23.15" tilt="-6.74" title=""/>
+      <hotspot url="images/1_8 - Photo.jpg" skinid="ht_image" description="Дом" id="Point02" target="" pan="22.95" tilt="6.9" title="Дом"/>
+    </hotspots>
+    <media/>
+    <transition softedge="0" zoomspeed="2" zoomfov="20" zoomoutpause="1" type="crossdissolve" enabled="0" zoomin="0" zoomout="0" blendtime="1" blendcolor="0x000000"/>
+    <control invertcontrol="1" sensitivity="8" lockedmouse="0" lockedkeyboard="0" invertwheel="0" contextprojections="0" hideabout="0" lockedkeyboardzoom="0" simulatemass="1" dblclickfullscreen="0" rubberband="0" lockedwheel="0" speedwheel="1" contextfullscreen="0"/>
+  </panorama>
+  <panorama id="node2">
+    <input leveltilesize="510" overlap="1" width="2048" leveltileurl="tiles/node2/cf_%c/l_%l/c_%x/tile_%y.jpg" height="2048" levelingpitch="0" levelbias="0.400" levelbiashidpi="0.400" levelingroll="0">
+      <level predecode="0" width="2048" preload="0" height="2048"/>
+      <level predecode="0" width="1024" preload="0" height="1024"/>
+      <level predecode="0" width="512" preload="0" height="512"/>
+      <level predecode="1" width="256" preload="1" height="256"/>
+      <preview strip="1" color="0x808080"/>
+    </input>
+    <view pannorth="0" fovmode="0">
+      <start fov="70" projection="4" pan="0" tilt="0"/>
+      <flyin fov="170" projection="9" pan="0" tilt="-90"/>
+      <min fov="5" pan="0" tilt="-90"/>
+      <max fov="120" scaletofit="1" fovfisheye="360" pan="360" tilt="90" fovstereographic="270"/>
+    </view>
+    <userdata author="" datetime="" description="" info="" comment="" longitude="" customnodeid="" copyright="" latitude="" tags="Desktop" title="" source=""/>
+    <hotspots width="180" wordwrap="1" height="20">
+      <label bordercolor="0x000000" width="180" textalpha="1" background="1" borderradius="1" backgroundcolor="0xffffff" wordwrap="1" height="20" textcolor="0x000000" border="1" enabled="1" backgroundalpha="1" borderalpha="1"/>
+      <polystyle bordercolor="0x0000ff" backgroundcolor="0x0000ff" mode="0" handcursor="1" backgroundalpha="0.2509803921568627" borderalpha="1"/>
+      <hotspot url="{node1}" skinid="ht_node" description="" id="Point01" target="-15.0/-2.4/70.0" pan="-103.24" tilt="-4.17" title=""/>
+      <hotspot url="{node3}" skinid="ht_node" description="" id="Point02" target="7.8/-2.7/70.0" pan="56.53" tilt="-3.57" title=""/>
+      <hotspot url="" skinid="ht_info" description="Тут может быть написано много чего всякого и такого и туда сюда&#xa;Дять игорь го" id="Point03" target="" pan="29.05" tilt="18.17" title="Инфа"/>
+      <hotspot url="images/1avatara_ru_star00014.jpg" skinid="ht_image" description="" id="Point04" target="" pan="81.9" tilt="2.64" title=""/>
+      <hotspot url="images/2_11 - Фото.jpg" skinid="ht_image" description="" id="Point05" target="" pan="76.24" tilt="8.39" title=""/>
+    </hotspots>
+    <media>
+      <image width="1920" fov="5.499" id="Element01" rotx="-11.000" stretch="1.000" pan="-38.570" tilt="-9.100" height="1080" clickmode="1" roty="-22.000" handcursor="0" rotz="-4.000">
+        <source url="media/001.001.jpg"/>
+      </image>
+    </media>
+    <transition softedge="0" zoomspeed="2" zoomfov="20" zoomoutpause="1" type="crossdissolve" enabled="0" zoomin="0" zoomout="0" blendtime="1" blendcolor="0x000000"/>
+    <control invertcontrol="1" sensitivity="8" lockedmouse="0" lockedkeyboard="0" invertwheel="0" contextprojections="0" hideabout="0" lockedkeyboardzoom="0" simulatemass="1" dblclickfullscreen="0" rubberband="0" lockedwheel="0" speedwheel="1" contextfullscreen="0"/>
+  </panorama>
+  <panorama id="node3">
+    <input leveltilesize="510" overlap="1" width="2048" leveltileurl="tiles/node3/cf_%c/l_%l/c_%x/tile_%y.jpg" height="2048" levelingpitch="0" levelbias="0.400" levelbiashidpi="0.400" levelingroll="0">
+      <level predecode="0" width="2048" preload="0" height="2048"/>
+      <level predecode="0" width="1024" preload="0" height="1024"/>
+      <level predecode="0" width="512" preload="0" height="512"/>
+      <level predecode="1" width="256" preload="1" height="256"/>
+      <preview strip="1" color="0x808080"/>
+    </input>
+    <view pannorth="0" fovmode="0">
+      <start fov="70" projection="4" pan="0" tilt="0"/>
+      <flyin fov="170" projection="9" pan="0" tilt="-90"/>
+      <min fov="5" pan="0" tilt="-90"/>
+      <max fov="120" scaletofit="1" fovfisheye="360" pan="360" tilt="90" fovstereographic="270"/>
+    </view>
+    <userdata author="" datetime="" description="" info="" comment="" longitude="" customnodeid="" copyright="" latitude="" tags="Desktop" title="" source=""/>
+    <hotspots width="180" wordwrap="1" height="20">
+      <label bordercolor="0x000000" width="180" textalpha="1" background="1" borderradius="1" backgroundcolor="0xffffff" wordwrap="1" height="20" textcolor="0x000000" border="1" enabled="1" backgroundalpha="1" borderalpha="1"/>
+      <polystyle bordercolor="0x0000ff" backgroundcolor="0x0000ff" mode="0" handcursor="1" backgroundalpha="0.2509803921568627" borderalpha="1"/>
+      <hotspot url="{node2}" skinid="ht_node" description="" id="Point01" target="" pan="-18.53" tilt="-4.29" title=""/>
+      <hotspot url="images/1_8 - Photo.jpg" skinid="ht_image" description="Дом" id="Point02" target="" pan="-156.93" tilt="10.5" title="Дом"/>
+    </hotspots>
+    <media/>
+    <transition softedge="0" zoomspeed="2" zoomfov="20" zoomoutpause="1" type="crossdissolve" enabled="0" zoomin="0" zoomout="0" blendtime="1" blendcolor="0x000000"/>
+    <control invertcontrol="1" sensitivity="8" lockedmouse="0" lockedkeyboard="0" invertwheel="0" contextprojections="0" hideabout="0" lockedkeyboardzoom="0" simulatemass="1" dblclickfullscreen="0" rubberband="0" lockedwheel="0" speedwheel="1" contextfullscreen="0"/>
+  </panorama>
+</tour>
