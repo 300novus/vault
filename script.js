@@ -1,12 +1,12 @@
 const tileData = [
     { category: "category1", size: "large-square", title: "Плитка 1", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content1.html" },
-    { category: "category2", size: "small-square", title: "Плитка 2", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content1.html" },
-    { category: "category3", size: "horizontal-rectangle", title: "Плитка 3", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content1.html" },
-    { category: "category1", size: "vertical-rectangle", title: "Плитка 4", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content1.html" },
-    { category: "category2", size: "small-square", title: "Плитка 5", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content1.html" },
-    { category: "category3", size: "large-square", title: "Плитка 6", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content1.html" },
-    { category: "category2", size: "horizontal-rectangle", title: "Плитка 7", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content1.html" },
-    { category: "category3", size: "vertical-rectangle", title: "Плитка 8", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content1.html" },
+    { category: "category2", size: "small-square", title: "Плитка 2", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content2.html" },
+    { category: "category3", size: "horizontal-rectangle", title: "Плитка 3", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content3.html" },
+    { category: "category1", size: "vertical-rectangle", title: "Плитка 4", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content4.html" },
+    { category: "category2", size: "small-square", title: "Плитка 5", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content5.html" },
+    { category: "category3", size: "large-square", title: "Плитка 6", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content6.html" },
+    { category: "category2", size: "horizontal-rectangle", title: "Плитка 7", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content7.html" },
+    { category: "category3", size: "vertical-rectangle", title: "Плитка 8", img: "https://avavatar.ru/images/avatars/44/avatar_ItfsQxuFUpO210Rf.jpg", modalContentFile: "content8.html" },
 ];
 
 const tileContainer = document.querySelector('.tile-container');
@@ -81,19 +81,16 @@ function openModal(contentFile) {
         .then(data => {
             modalBody.innerHTML = data;
             modal.style.display = 'block';
-            document.body.classList.add('modal-open'); // Prevent main page scrolling
         })
         .catch(error => console.error('Error loading modal content:', error));
 }
 
 closeButton.addEventListener('click', () => {
     modal.style.display = 'none';
-    document.body.classList.remove('modal-open'); // Re-enable main page scrolling
 });
 
 window.addEventListener('click', event => {
     if (event.target == modal) {
         modal.style.display = 'none';
-        document.body.classList.remove('modal-open'); // Re-enable main page scrolling
     }
 });

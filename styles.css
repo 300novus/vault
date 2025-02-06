@@ -3,11 +3,6 @@ body {
     margin: 0;
     font-family: 'Arial', sans-serif;
     color: #ffffff;
-    overflow-x: hidden; /* Prevent horizontal scroll */
-}
-
-body.modal-open {
-    overflow: hidden; /* Prevent page scroll when modal is open */
 }
 
 .tile-description, .tile-title {
@@ -159,15 +154,6 @@ body.modal-open {
 
     .tile-title {
         font-size: 12px;
-    }
-
-    .modal-content {
-        width: 90%;
-        margin: 10% auto;
-    }
-
-    .close-button {
-        font-size: 24px;
     }
 }
 
