@@ -86,11 +86,11 @@
 
         .tile-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, 100px);
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             grid-auto-rows: 100px;
             gap: 5px;
             justify-content: center;
-            max-width: 600px;
+            max-width: 100%;
             margin: 0 auto;
             padding: 20px;
             background-color: #0e0e0e;
@@ -101,7 +101,7 @@
             position: relative;
             overflow: hidden;
             border-radius: 10px;
-            transition: transform 0.3s, box-shadow 0.3s, opacity 0.3s;
+            transition: transform 0.3s, box-shadow 0.3s;
             cursor: pointer;
         }
 
@@ -138,15 +138,12 @@
 
         .tile.hidden {
             display: none;
-            opacity: 0;
-            transform: scale(0.8);
             pointer-events: none;
-            transition: opacity 0.3s, transform 0.3s;
         }
 
         @media (max-width: 600px) {
             .tile-container {
-                grid-template-columns: repeat(auto-fill, 50px);
+                grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
                 grid-auto-rows: 50px;
             }
 
@@ -170,7 +167,7 @@
 
     <div class="filter-buttons">
         <button data-filter="all" class="active" data-tooltip="Показать все эскизы">Все</button>
-        <button data-filter="category1" data-tooltip="2007">ЭСКИЗЫ</button>
+        <button data-filter="category1" data-tooltip="ЭСКИЗЫ">ЭСКИЗЫ</button>
         <button data-filter="category2" data-tooltip="2007">2007 ГОД</button>
         <button data-filter="category3" data-tooltip="2010">Категория 3</button>
     </div>
