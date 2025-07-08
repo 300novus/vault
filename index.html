@@ -9,12 +9,12 @@
       margin: 0;
       height: 100%;
       overflow: hidden;
-      background-color: #fff; /* Белый фон для всего сайта */
+      background-color: #fff;
     }
     #map-container {
       width: 100%;
       height: 100%;
-      background-color: #fff; /* Белый фон контейнера карты */
+      background-color: #fff;
       position: relative;
       overflow: hidden;
       touch-action: none;
@@ -46,11 +46,11 @@
       pointer-events: auto;
     }
     .tooltip {
-      position: absolute;
+      position: fixed;
       background: white;
       border: 1px solid #ccc;
       padding: 10px;
-      width: 200px;
+      max-width: 90vw;
       display: none;
       z-index: 1000;
     }
@@ -60,7 +60,7 @@
     }
     @media (max-width: 600px) {
       .tooltip {
-        width: 150px;
+        max-width: 90vw;
       }
     }
   </style>
@@ -85,7 +85,6 @@
   const tilesX = Math.ceil(mapWidth / tileSize);
   const tilesY = Math.ceil(mapHeight / tileSize);
 
-  // Центрирование карты
   function centerMap() {
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
@@ -94,7 +93,6 @@
     updateTransform();
   }
 
-  // Добавление тайлов
   for (let y = 0; y < tilesY; y++) {
     for (let x = 0; x < tilesX; x++) {
       const tile = document.createElement('img');
@@ -106,7 +104,6 @@
     }
   }
 
-  // Загрузка точек из JSON
   fetch('points.json')
     .then(res => res.json())
     .then(points => {
@@ -120,22 +117,31 @@
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
         tooltip.id = `tooltip${i}`;
-        tooltip.style.left = `${point.x + 60}px`;
-        tooltip.style.top = `${point.y + 20}px`;
         tooltip.innerHTML = `
           <img src="${point.image}" alt="Точка">
           <p>${point.text}</p>
         `;
 
-        marker.addEventListener('mouseenter', () => tooltip.style.display = 'block');
-        marker.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+        marker.addEventListener('mouseenter', (e) => {
+          tooltip.style.display = 'block';
+          tooltip.style.left = `${e.clientX + 10}px`;
+          tooltip.style.top = `${e.clientY + 10}px`;
+        });
+
+        marker.addEventListener('mousemove', (e) => {
+          tooltip.style.left = `${e.clientX + 10}px`;
+          tooltip.style.top = `${e.clientY + 10}px`;
+        });
+
+        marker.addEventListener('mouseleave', () => {
+          tooltip.style.display = 'none';
+        });
 
         mapWrapper.appendChild(marker);
-        mapWrapper.appendChild(tooltip);
+        document.body.appendChild(tooltip);
       });
     });
 
-  // Масштабирование колесом мыши
   container.addEventListener('wheel', (e) => {
     e.preventDefault();
     const rect = container.getBoundingClientRect();
@@ -153,7 +159,6 @@
     updateTransform();
   }, { passive: false });
 
-  // Перемещение мышкой
   container.addEventListener('mousedown', (e) => {
     e.preventDefault();
     isDragging = true;
@@ -176,7 +181,6 @@
 
   function updateTransform() {
     mapWrapper.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    // Не масштабировать маркеры
     document.querySelectorAll('.marker').forEach(m => {
       m.style.transform = `scale(${1 / scale})`;
     });
