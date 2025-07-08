@@ -18,26 +18,31 @@
       overflow: hidden;
       touch-action: none;
       cursor: grab;
+      user-select: none;
     }
     #map-wrapper {
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       user-select: none;
     }
     .tile {
       position: absolute;
       width: 256px;
       height: 256px;
+      pointer-events: none;
     }
     .marker {
       position: absolute;
-      width: 20px;
-      height: 20px;
-      background-color: red;
-      border-radius: 50%;
-      cursor: pointer;
+      width: 50px;
+      height: 50px;
+      background-image: url('images/icon.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
       z-index: 10;
+      pointer-events: auto;
     }
     .tooltip {
       position: absolute;
@@ -73,6 +78,17 @@
   let isDragging = false;
   let startX, startY;
 
+  // Инициализировать центрирование
+  function centerMap() {
+    const mapWidth = 1000; // ширина карты
+    const mapHeight = 1000; // высота карты
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    originX = (containerWidth - mapWidth) / 2;
+    originY = (containerHeight - mapHeight) / 2;
+    updateTransform();
+  }
+
   // Загрузка плиток (тайлов)
   const tileSize = 256;
   const mapWidth = 1000;
@@ -83,7 +99,7 @@
   for (let y = 0; y < tilesY; y++) {
     for (let x = 0; x < tilesX; x++) {
       const tile = document.createElement('img');
-      tile.src = `tiles/tile_${x}_${y}.jpg`; // Подготовь заранее эти файлы
+      tile.src = `tiles/tile_${x}_${y}.jpg`;
       tile.className = 'tile';
       tile.style.left = `${x * tileSize}px`;
       tile.style.top = `${y * tileSize}px`;
@@ -105,7 +121,7 @@
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
         tooltip.id = `tooltip${i}`;
-        tooltip.style.left = `${point.x + 20}px`;
+        tooltip.style.left = `${point.x + 60}px`;
         tooltip.style.top = `${point.y + 20}px`;
         tooltip.innerHTML = `
           <img src="${point.image}" alt="Точка">
@@ -136,10 +152,11 @@
 
     scale = newScale;
     updateTransform();
-  });
+  }, { passive: false });
 
   // Перемещение мышкой
   container.addEventListener('mousedown', (e) => {
+    e.preventDefault();
     isDragging = true;
     startX = e.clientX - originX;
     startY = e.clientY - originY;
@@ -158,7 +175,14 @@
 
   function updateTransform() {
     mapWrapper.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    // Отключаем масштаб для маркеров
+    document.querySelectorAll('.marker').forEach(m => {
+      m.style.transform = `scale(${1 / scale})`;
+    });
   }
+
+  // Центрировать карту после загрузки
+  window.addEventListener('load', centerMap);
 </script>
 </body>
 </html>
