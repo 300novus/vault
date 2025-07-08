@@ -22,9 +22,8 @@
     }
     #map-wrapper {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 0;
+      left: 0;
       user-select: none;
     }
     .tile {
@@ -78,10 +77,14 @@
   let isDragging = false;
   let startX, startY;
 
-  // Инициализировать центрирование
+  const tileSize = 256;
+  const mapWidth = 1000;
+  const mapHeight = 1000;
+  const tilesX = Math.ceil(mapWidth / tileSize);
+  const tilesY = Math.ceil(mapHeight / tileSize);
+
+  // Центрирование карты
   function centerMap() {
-    const mapWidth = 1000; // ширина карты
-    const mapHeight = 1000; // высота карты
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
     originX = (containerWidth - mapWidth) / 2;
@@ -89,13 +92,7 @@
     updateTransform();
   }
 
-  // Загрузка плиток (тайлов)
-  const tileSize = 256;
-  const mapWidth = 1000;
-  const mapHeight = 1000;
-  const tilesX = Math.ceil(mapWidth / tileSize);
-  const tilesY = Math.ceil(mapHeight / tileSize);
-
+  // Добавление тайлов
   for (let y = 0; y < tilesY; y++) {
     for (let x = 0; x < tilesX; x++) {
       const tile = document.createElement('img');
@@ -107,7 +104,7 @@
     }
   }
 
-  // Подгрузка точек из JSON
+  // Загрузка точек из JSON
   fetch('points.json')
     .then(res => res.json())
     .then(points => {
@@ -136,7 +133,7 @@
       });
     });
 
-  // Масштабирование колесиком
+  // Масштабирование колесом мыши
   container.addEventListener('wheel', (e) => {
     e.preventDefault();
     const rect = mapWrapper.getBoundingClientRect();
@@ -162,12 +159,14 @@
     startY = e.clientY - originY;
     container.style.cursor = 'grabbing';
   });
+
   container.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
     originX = e.clientX - startX;
     originY = e.clientY - startY;
     updateTransform();
   });
+
   container.addEventListener('mouseup', () => {
     isDragging = false;
     container.style.cursor = 'grab';
@@ -175,13 +174,12 @@
 
   function updateTransform() {
     mapWrapper.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    // Отключаем масштаб для маркеров
+    // Не масштабировать маркеры
     document.querySelectorAll('.marker').forEach(m => {
       m.style.transform = `scale(${1 / scale})`;
     });
   }
 
-  // Центрировать карту после загрузки
   window.addEventListener('load', centerMap);
 </script>
 </body>
