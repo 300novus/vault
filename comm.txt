@@ -1,0 +1,1 @@
+magick map.png -crop 256x256 -set filenametile tile_%[fxint(mod(page.x,10000)256)]_%[fxint(mod(page.y,10000)256)] +repage +adjoin tiles%[filenametile].jpg
