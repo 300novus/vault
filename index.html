@@ -107,10 +107,11 @@
   let pinchScreen = null;
 
   const tileSize = 256;
-  const mapWidth = 1000;
-  const mapHeight = 1000;
-  const tilesX = Math.ceil(mapWidth / tileSize);
-  const tilesY = Math.ceil(mapHeight / tileSize);
+const tilesX = 113;
+const tilesY = 113;
+const mapWidth = tileSize * tilesX; // 28928
+const mapHeight = tileSize * tilesY;
+  const tileMap = {};
 
   function centerMap() {
     const containerWidth = container.clientWidth;
@@ -120,14 +121,61 @@
     updateTransform();
   }
 
-  for (let y = 0; y < tilesY; y++) {
-    for (let x = 0; x < tilesX; x++) {
-      const tile = document.createElement('img');
-      tile.src = `tiles/tile_${x}_${y}.jpg`;
-      tile.className = 'tile';
-      tile.style.left = `${x * tileSize}px`;
-      tile.style.top = `${y * tileSize}px`;
-      mapWrapper.appendChild(tile);
+  function renderTiles() {
+    const containerRect = container.getBoundingClientRect();
+    const viewLeft = -originX / scale;
+    const viewTop = -originY / scale;
+    const viewRight = viewLeft + containerRect.width / scale;
+    const viewBottom = viewTop + containerRect.height / scale;
+
+    const startX = Math.floor(viewLeft / tileSize);
+    const startY = Math.floor(viewTop / tileSize);
+    const endX = Math.ceil(viewRight / tileSize);
+    const endY = Math.ceil(viewBottom / tileSize);
+
+    // Remove old tiles
+    for (const key in tileMap) {
+      const [x, y] = key.split(',').map(Number);
+      if (x < startX || x > endX || y < startY || y > endY) {
+        mapWrapper.removeChild(tileMap[key]);
+        delete tileMap[key];
+      }
+    }
+
+    // Add visible tiles
+    for (let y = startY; y <= endY; y++) {
+      for (let x = startX; x <= endX; x++) {
+        if (x < 0 || y < 0 || x >= tilesX || y >= tilesY) continue;
+        const key = `${x},${y}`;
+        if (tileMap[key]) continue;
+        const tile = document.createElement('img');
+        tile.src = `tiles/tile_${x}_${y}.jpg`;
+        tile.className = 'tile';
+        tile.style.left = `${x * tileSize}px`;
+        tile.style.top = `${y * tileSize}px`;
+        mapWrapper.appendChild(tile);
+        tileMap[key] = tile;
+      }
+    }
+  }
+
+  function updateTransform() {
+    mapWrapper.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    document.querySelectorAll('.marker').forEach(m => {
+      m.style.transform = `scale(${1 / scale})`;
+    });
+    updateTooltipPosition();
+    renderTiles();
+  }
+
+  function updateTooltipPosition() {
+    if (activeTooltip && activeTooltip.dataset.x && activeTooltip.dataset.y) {
+      const x = parseFloat(activeTooltip.dataset.x);
+      const y = parseFloat(activeTooltip.dataset.y);
+      const screenX = originX + x * scale;
+      const screenY = originY + y * scale;
+      activeTooltip.style.left = `${screenX}px`;
+      activeTooltip.style.top = `${screenY + 60}px`;
     }
   }
 
@@ -195,7 +243,7 @@
     const offsetY = e.clientY - rect.top - originY;
     const delta = e.deltaY < 0 ? 1.1 : 0.9;
     const newScale = scale * delta;
-    if (newScale < 0.5 || newScale > 5) return;
+    if (newScale < 0.2 || newScale > 6) return;
     originX -= offsetX * (delta - 1);
     originY -= offsetY * (delta - 1);
     scale = newScale;
@@ -272,26 +320,10 @@
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  function updateTransform() {
-    mapWrapper.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    document.querySelectorAll('.marker').forEach(m => {
-      m.style.transform = `scale(${1 / scale})`;
-    });
-    updateTooltipPosition();
-  }
-
-  function updateTooltipPosition() {
-    if (activeTooltip && activeTooltip.dataset.x && activeTooltip.dataset.y) {
-      const x = parseFloat(activeTooltip.dataset.x);
-      const y = parseFloat(activeTooltip.dataset.y);
-      const screenX = originX + x * scale;
-      const screenY = originY + y * scale;
-      activeTooltip.style.left = `${screenX}px`;
-      activeTooltip.style.top = `${screenY + 60}px`;
-    }
-  }
-
-  window.addEventListener('load', centerMap);
+  window.addEventListener('load', () => {
+    centerMap();
+    renderTiles();
+  });
 </script>
 </body>
 </html>
