@@ -9,11 +9,12 @@
       margin: 0;
       height: 100%;
       overflow: hidden;
+      background-color: #fff; /* Белый фон для всего сайта */
     }
     #map-container {
       width: 100%;
       height: 100%;
-      background-color: #000;
+      background-color: #fff; /* Белый фон контейнера карты */
       position: relative;
       overflow: hidden;
       touch-action: none;
@@ -25,6 +26,7 @@
       top: 0;
       left: 0;
       user-select: none;
+      transform-origin: 0 0;
     }
     .tile {
       position: absolute;
@@ -136,16 +138,16 @@
   // Масштабирование колесом мыши
   container.addEventListener('wheel', (e) => {
     e.preventDefault();
-    const rect = mapWrapper.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
+    const rect = container.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left - originX;
+    const offsetY = e.clientY - rect.top - originY;
 
     const delta = e.deltaY < 0 ? 1.1 : 0.9;
     const newScale = scale * delta;
     if (newScale < 0.5 || newScale > 5) return;
 
-    originX = (originX - offsetX) * delta + offsetX;
-    originY = (originY - offsetY) * delta + offsetY;
+    originX -= offsetX * (delta - 1);
+    originY -= offsetY * (delta - 1);
 
     scale = newScale;
     updateTransform();
