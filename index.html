@@ -46,7 +46,7 @@
       pointer-events: auto;
     }
     .tooltip {
-      position: fixed;
+      position: absolute;
       background: white;
       border: 1px solid #ccc;
       padding: 10px;
@@ -55,10 +55,29 @@
       overflow: auto;
       display: none;
       z-index: 1000;
+      transform: translate(-50%, 0);
     }
     .tooltip img {
       width: 100%;
       height: auto;
+      cursor: pointer;
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      display: none;
+    }
+    .modal img {
+      max-width: 90vw;
+      max-height: 90vh;
     }
   </style>
 </head>
@@ -66,16 +85,23 @@
 <div id="map-container">
   <div id="map-wrapper"></div>
 </div>
+<div id="modal" class="modal" onclick="this.style.display='none'">
+  <img src="" alt="Полноэкранное изображение" id="modal-img">
+</div>
 
 <script>
   const container = document.getElementById('map-container');
   const mapWrapper = document.getElementById('map-wrapper');
+  const modal = document.getElementById('modal');
+  const modalImg = document.getElementById('modal-img');
+
   let scale = 1;
   let originX = 0;
   let originY = 0;
   let isDragging = false;
   let startX, startY;
   let activeTooltip = null;
+  let activeMarker = null;
   let initialPinchDistance = null;
   let initialScale = 1;
 
@@ -112,15 +138,20 @@
         marker.className = 'marker';
         marker.style.left = `${point.x}px`;
         marker.style.top = `${point.y}px`;
-        marker.dataset.tooltip = `tooltip${i}`;
 
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
-        tooltip.id = `tooltip${i}`;
         tooltip.innerHTML = `
           <img src="${point.image}" alt="Точка">
           <p>${point.text}</p>
         `;
+
+        const img = tooltip.querySelector('img');
+        img.addEventListener('click', (e) => {
+          e.stopPropagation();
+          modalImg.src = point.image;
+          modal.style.display = 'flex';
+        });
 
         marker.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -131,30 +162,19 @@
           if (tooltip.style.display === 'block') {
             tooltip.style.display = 'none';
             activeTooltip = null;
+            activeMarker = null;
           } else {
             tooltip.style.display = 'block';
             activeTooltip = tooltip;
-
-            const markerRect = marker.getBoundingClientRect();
-            const tooltipWidth = tooltip.offsetWidth;
-            const tooltipHeight = tooltip.offsetHeight;
-            let left = markerRect.left + 60;
-            let top = markerRect.top + 20;
-
-            if (left + tooltipWidth > window.innerWidth) {
-              left = window.innerWidth - tooltipWidth - 10;
-            }
-            if (top + tooltipHeight > window.innerHeight) {
-              top = window.innerHeight - tooltipHeight - 10;
-            }
-
-            tooltip.style.left = `${left}px`;
-            tooltip.style.top = `${top}px`;
+            activeMarker = marker;
           }
         });
 
         mapWrapper.appendChild(marker);
-        document.body.appendChild(tooltip);
+        mapWrapper.appendChild(tooltip);
+
+        tooltip.dataset.x = point.x;
+        tooltip.dataset.y = point.y;
       });
     });
 
@@ -162,6 +182,7 @@
     if (activeTooltip) {
       activeTooltip.style.display = 'none';
       activeTooltip = null;
+      activeMarker = null;
     }
   });
 
@@ -200,8 +221,9 @@
       const newScale = initialScale * scaleFactor;
 
       if (newScale >= 0.5 && newScale <= 5) {
-        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const rect = container.getBoundingClientRect();
+        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
         originX -= (centerX - originX) * (scaleFactor - 1);
         originY -= (centerY - originY) * (scaleFactor - 1);
         scale = newScale;
@@ -250,6 +272,16 @@
     document.querySelectorAll('.marker').forEach(m => {
       m.style.transform = `scale(${1 / scale})`;
     });
+
+    // Обновляем позицию tooltip если активен
+    if (activeTooltip && activeMarker) {
+      const x = parseFloat(activeTooltip.dataset.x);
+      const y = parseFloat(activeTooltip.dataset.y);
+      const screenX = originX + x * scale;
+      const screenY = originY + y * scale;
+      activeTooltip.style.left = `${screenX}px`;
+      activeTooltip.style.top = `${screenY + 60}px`;
+    }
   }
 
   window.addEventListener('load', centerMap);
