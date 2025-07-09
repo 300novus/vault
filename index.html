@@ -149,7 +149,7 @@ const mapHeight = tileSize * tilesY;
         const key = `${x},${y}`;
         if (tileMap[key]) continue;
         const tile = document.createElement('img');
-        tile.src = `https://res.cloudinary.com/dypsj7tre/image/upload/f_auto,q_auto/tiles/tile_${x}_${x}_${y}.jpg`;
+        tile.src = `https://res.cloudinary.com/dypsj7tre/image/upload/tiles/tile_${x}_${x}_${y}.jpg`;
         tile.className = 'tile';
         tile.style.left = `${x * tileSize}px`;
         tile.style.top = `${y * tileSize}px`;
