@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Админ-панель карты</title>
   <style>
     body {
@@ -69,7 +69,7 @@
     button {
       margin-right: 6px;
     }
-    form input, form textarea {
+    form input, form textarea, form select {
       width: 100%;
       margin-bottom: 10px;
       padding: 6px;
@@ -109,15 +109,41 @@
         <label>X координата:<input type="number" id="x"></label>
         <label>Y координата:<input type="number" id="y"></label>
         <label>Ссылка на картинку:<input type="text" id="image"></label>
-        <label>Описание:<textarea id="text"></textarea></label>
+        <label>Описание:
+          <textarea id="text" list="recent-texts"></textarea>
+          <datalist id="recent-texts"></datalist>
+        </label>
+        <label>Категория:
+          <input type="text" id="category" list="category-list">
+          <datalist id="category-list">
+            <option>Памятник</option>
+            <option>Парковая зона</option>
+            <option>Здание</option>
+            <option>Инфраструктура</option>
+          </datalist>
+        </label>
+        <label>Теги (через запятую):<input type="text" id="tags"></label>
+        <label>Иконка:
+          <select id="icon">
+            <option value="default">🔴 По умолчанию</option>
+            <option value="blue">🔵 Синяя</option>
+            <option value="green">🟢 Зелёная</option>
+            <option value="yellow">🟡 Жёлтая</option>
+            <option value="black">⚫ Чёрная</option>
+          </select>
+        </label>
         <button type="submit">💾 Сохранить</button>
         <button type="button" onclick="resetForm()">↩ Очистить</button>
       </form>
 
+
       <h2>Список точек</h2>
       <table id="points-table">
         <thead>
-          <tr><th>#</th><th>X</th><th>Y</th><th>Фото</th><th>Описание</th><th>Действия</th></tr>
+          <tr>
+            <th>#</th><th>X</th><th>Y</th><th>Фото</th><th>Описание</th>
+            <th>Категория</th><th>Теги</th><th>Иконка</th><th>Действия</th>
+          </tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -130,161 +156,197 @@
     </section>
   </main>
 
-  <script>
-    let points = [];
-    const preview = document.getElementById('map-preview');
-    const mapImage = document.getElementById('map-image');
-    const mapSize = 28928;
+<script>
+let points = [];
+let recentTexts = [];
+const mapSize = 28928;
+const preview = document.getElementById('map-preview');
 
-    function checkPassword() {
-      const password = document.getElementById('admin-password').value;
-      if (password === '1234') {
-        document.getElementById('login-screen').style.display = 'none';
-      } else {
-        alert('Неверный пароль!');
-      }
-    }
+function checkPassword() {
+  const password = document.getElementById('admin-password').value;
+  if (password === '1234') {
+    document.getElementById('login-screen').style.display = 'none';
+  } else {
+    alert('Неверный пароль!');
+  }
+}
 
-    function renderTable() {
-      const tbody = document.querySelector('#points-table tbody');
-      tbody.innerHTML = '';
-      preview.querySelectorAll('.preview-marker').forEach(m => m.remove());
+preview.addEventListener('click', (e) => {
+  const rect = preview.getBoundingClientRect();
+  const x = Math.round(((e.clientX - rect.left) / rect.width) * mapSize);
+  const y = Math.round(((e.clientY - rect.top) / rect.height) * mapSize);
+  document.getElementById('x').value = x;
+  document.getElementById('y').value = y;
+});
 
-      points.forEach((p, i) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${i + 1}</td>
-          <td>${p.x}</td>
-          <td>${p.y}</td>
-          <td><img src="${p.image}" width="50"></td>
-          <td>${p.text}</td>
-          <td>
-            <button onclick="editPoint(${i})">✏️</button>
-            <button onclick="deletePoint(${i})">🗑</button>
-          </td>
-        `;
-        tbody.appendChild(row);
+function renderTable() {
+  const tbody = document.querySelector('#points-table tbody');
+  tbody.innerHTML = '';
+  preview.querySelectorAll('.preview-marker').forEach(m => m.remove());
 
-        const marker = document.createElement('div');
-        marker.className = 'preview-marker';
-        marker.style.left = (p.x / mapSize * 100) + '%';
-        marker.style.top = (p.y / mapSize * 100) + '%';
-        marker.title = p.text;
-        marker.draggable = true;
+  points.forEach((p, i) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${p.x}</td>
+      <td>${p.y}</td>
+      <td><img src="${p.image}" width="50"></td>
+      <td>${p.text}</td>
+      <td>${p.category || ''}</td>
+      <td>${(p.tags || []).join(', ')}</td>
+      <td>${p.icon || 'default'}</td>
+      <td>
+        <button onclick="editPoint(${i})">✏️</button>
+        <button onclick="deletePoint(${i})">🗑</button>
+      </td>
+    `;
+    tbody.appendChild(row);
 
-        let offsetX = 0;
-        let offsetY = 0;
+    const marker = document.createElement('div');
+    marker.className = 'preview-marker';
+    marker.style.left = (p.x / mapSize * 100) + '%';
+    marker.style.top = (p.y / mapSize * 100) + '%';
+    marker.title = p.text;
+    marker.draggable = true;
 
-        marker.addEventListener('dragstart', e => {
-          offsetX = e.offsetX;
-          offsetY = e.offsetY;
-        });
+    // Цвет иконки
+    const colors = {
+      blue: 'blue',
+      green: 'green',
+      yellow: 'gold',
+      black: '#000',
+      default: 'red'
+    };
+    marker.style.background = colors[p.icon] || 'red';
 
-        marker.addEventListener('dragend', e => {
-          const rect = preview.getBoundingClientRect();
-          const relX = e.clientX - rect.left - offsetX;
-          const relY = e.clientY - rect.top - offsetY;
+    let offsetX = 0, offsetY = 0;
 
-          const normX = Math.round((relX / rect.width) * mapSize);
-          const normY = Math.round((relY / rect.height) * mapSize);
+    marker.addEventListener('dragstart', e => {
+      offsetX = e.offsetX;
+      offsetY = e.offsetY;
+    });
 
-          points[i].x = normX;
-          points[i].y = normY;
+    marker.addEventListener('dragend', e => {
+      const rect = preview.getBoundingClientRect();
+      const relX = e.clientX - rect.left - offsetX;
+      const relY = e.clientY - rect.top - offsetY;
 
-          document.getElementById('x').value = normX;
-          document.getElementById('y').value = normY;
+      const normX = Math.round((relX / rect.width) * mapSize);
+      const normY = Math.round((relY / rect.height) * mapSize);
 
-          renderTable();
-        });
+      points[i].x = normX;
+      points[i].y = normY;
 
-        marker.onclick = () => editPoint(i);
-        preview.appendChild(marker);
-      });
-    }
+      document.getElementById('x').value = normX;
+      document.getElementById('y').value = normY;
 
-    document.getElementById('point-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const x = parseInt(document.getElementById('x').value);
-      const y = parseInt(document.getElementById('y').value);
-      const image = document.getElementById('image').value;
-      const text = document.getElementById('text').value;
-      const index = document.getElementById('edit-index').value;
-
-      if (index !== '') {
-        points[index] = { x, y, image, text };
-      } else {
-        points.push({ x, y, image, text });
-      }
-      resetForm();
       renderTable();
     });
 
-    function editPoint(i) {
-      const p = points[i];
-      document.getElementById('x').value = p.x;
-      document.getElementById('y').value = p.y;
-      document.getElementById('image').value = p.image;
-      document.getElementById('text').value = p.text;
-      document.getElementById('edit-index').value = i;
-    }
+    marker.onclick = () => editPoint(i);
+    preview.appendChild(marker);
+  });
 
-    function deletePoint(i) {
-      if (confirm('Удалить эту точку?')) {
-        points.splice(i, 1);
-        renderTable();
-      }
-    }
+  // Обновление подсказок
+  const textList = document.getElementById('recent-texts');
+  textList.innerHTML = recentTexts.map(t => `<option value="${t}">`).join('');
+}
 
-    function resetForm() {
-      document.getElementById('point-form').reset();
-      document.getElementById('edit-index').value = '';
-    }
+document.getElementById('point-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const x = parseInt(document.getElementById('x').value);
+  const y = parseInt(document.getElementById('y').value);
+  const image = document.getElementById('image').value;
+  const text = document.getElementById('text').value;
+  const category = document.getElementById('category').value;
+  const tags = document.getElementById('tags').value.split(',').map(t => t.trim());
+  const icon = document.getElementById('icon').value;
+  const index = document.getElementById('edit-index').value;
 
-    function uploadJSON(input) {
-      const file = input.files[0];
-      const reader = new FileReader();
-      reader.onload = function() {
-        points = JSON.parse(reader.result);
-        renderTable();
-      };
-      reader.readAsText(file);
-    }
+  if (text && !recentTexts.includes(text)) {
+    recentTexts.unshift(text);
+    if (recentTexts.length > 10) recentTexts.pop();
+  }
 
-    function saveJSON() {
-      const blob = new Blob([JSON.stringify(points, null, 2)], { type: 'application/json' });
-      const fileHandle = window.showSaveFilePicker ? window.showSaveFilePicker({
-        suggestedName: 'points.json',
-        types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
-      }) : Promise.resolve();
+  const point = { x, y, image, text, category, tags, icon };
 
-      if (fileHandle) {
-        fileHandle.then(async handle => {
-          const writable = await handle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          alert('Файл сохранён!');
-        }).catch(() => {
-          // fallback to classic download if rejected
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = 'points.json';
-          a.click();
-        });
-      } else {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'points.json';
-        a.click();
-      }
-    }
+  if (index !== '') {
+    points[index] = point;
+  } else {
+    points.push(point);
+  }
 
-    fetch('points.json')
-      .then(res => res.json())
-      .then(json => {
-        points = json;
-        renderTable();
-      })
-      .catch(err => console.warn('points.json не найден или не загружен'));
-  </script>
+  resetForm();
+  renderTable();
+});
+
+function editPoint(i) {
+  const p = points[i];
+  document.getElementById('x').value = p.x;
+  document.getElementById('y').value = p.y;
+  document.getElementById('image').value = p.image;
+  document.getElementById('text').value = p.text;
+  document.getElementById('category').value = p.category || '';
+  document.getElementById('tags').value = (p.tags || []).join(', ');
+  document.getElementById('icon').value = p.icon || 'default';
+  document.getElementById('edit-index').value = i;
+}
+
+function deletePoint(i) {
+  if (confirm('Удалить эту точку?')) {
+    points.splice(i, 1);
+    renderTable();
+  }
+}
+
+function resetForm() {
+  document.getElementById('point-form').reset();
+  document.getElementById('edit-index').value = '';
+}
+
+function uploadJSON(input) {
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = function() {
+    points = JSON.parse(reader.result);
+    renderTable();
+  };
+  reader.readAsText(file);
+}
+
+function saveJSON() {
+  const blob = new Blob([JSON.stringify(points, null, 2)], { type: 'application/json' });
+
+  if (window.showSaveFilePicker) {
+    window.showSaveFilePicker({
+      suggestedName: 'points.json',
+      types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
+    }).then(async handle => {
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      alert('Файл сохранён!');
+    }).catch(() => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'points.json';
+      a.click();
+    });
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'points.json';
+    a.click();
+  }
+}
+
+fetch('points.json')
+  .then(res => res.json())
+  .then(json => {
+    points = json;
+    renderTable();
+  })
+  .catch(err => console.warn('points.json не найден или не загружен'));
+</script>
 </body>
 </html>
