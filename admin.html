@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ-панель карты</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      font-size: 20px;
+    }
+    main {
+      display: flex;
+      flex: 1;
+    }
+    #controls {
+      width: 40%;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid #ccc;
+    }
+    #map-preview {
+      flex: 1;
+      background: #ddd;
+      position: relative;
+    }
+    #map-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+    .preview-marker {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: red;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: grab;
+    }
+    .preview-marker:active {
+      cursor: grabbing;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    button {
+      margin-right: 6px;
+    }
+    form input, form textarea {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 6px;
+      font-size: 14px;
+    }
+    #login-screen {
+      position: fixed;
+      inset: 0;
+      background: #000000cc;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 10000;
+    }
+    #login-screen input {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="login-screen">
+    <h2>Введите пароль для доступа</h2>
+    <input type="password" id="admin-password" placeholder="Пароль" onkeydown="if(event.key==='Enter') checkPassword()">
+    <button onclick="checkPassword()">Войти</button>
+  </div>
+
+  <header>🗺 Админ-панель: точки на карте</header>
+  <main>
+    <section id="controls">
+      <h2>Добавить / Редактировать точку</h2>
+      <form id="point-form">
+        <input type="hidden" id="edit-index">
+        <label>X координата:<input type="number" id="x"></label>
+        <label>Y координата:<input type="number" id="y"></label>
+        <label>Ссылка на картинку:<input type="text" id="image"></label>
+        <label>Описание:<textarea id="text"></textarea></label>
+        <button type="submit">💾 Сохранить</button>
+        <button type="button" onclick="resetForm()">↩ Очистить</button>
+      </form>
+
+      <h2>Список точек</h2>
+      <table id="points-table">
+        <thead>
+          <tr><th>#</th><th>X</th><th>Y</th><th>Фото</th><th>Описание</th><th>Действия</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <button onclick="saveJSON()">💾 Обновить points.json</button>
+      <input type="file" accept="application/json" onchange="uploadJSON(this)">
+    </section>
+    <section id="map-preview">
+      <img id="map-image" src="tiles/tile_0_0.jpg" alt="Карта">
+    </section>
+  </main>
+
+  <script>
+    let points = [];
+    const preview = document.getElementById('map-preview');
+    const mapImage = document.getElementById('map-image');
+    const mapSize = 28928;
+
+    function checkPassword() {
+      const password = document.getElementById('admin-password').value;
+      if (password === '1234') {
+        document.getElementById('login-screen').style.display = 'none';
+      } else {
+        alert('Неверный пароль!');
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#points-table tbody');
+      tbody.innerHTML = '';
+      preview.querySelectorAll('.preview-marker').forEach(m => m.remove());
+
+      points.forEach((p, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${p.x}</td>
+          <td>${p.y}</td>
+          <td><img src="${p.image}" width="50"></td>
+          <td>${p.text}</td>
+          <td>
+            <button onclick="editPoint(${i})">✏️</button>
+            <button onclick="deletePoint(${i})">🗑</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+
+        const marker = document.createElement('div');
+        marker.className = 'preview-marker';
+        marker.style.left = (p.x / mapSize * 100) + '%';
+        marker.style.top = (p.y / mapSize * 100) + '%';
+        marker.title = p.text;
+        marker.draggable = true;
+
+        let offsetX = 0;
+        let offsetY = 0;
+
+        marker.addEventListener('dragstart', e => {
+          offsetX = e.offsetX;
+          offsetY = e.offsetY;
+        });
+
+        marker.addEventListener('dragend', e => {
+          const rect = preview.getBoundingClientRect();
+          const relX = e.clientX - rect.left - offsetX;
+          const relY = e.clientY - rect.top - offsetY;
+
+          const normX = Math.round((relX / rect.width) * mapSize);
+          const normY = Math.round((relY / rect.height) * mapSize);
+
+          points[i].x = normX;
+          points[i].y = normY;
+
+          document.getElementById('x').value = normX;
+          document.getElementById('y').value = normY;
+
+          renderTable();
+        });
+
+        marker.onclick = () => editPoint(i);
+        preview.appendChild(marker);
+      });
+    }
+
+    document.getElementById('point-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const x = parseInt(document.getElementById('x').value);
+      const y = parseInt(document.getElementById('y').value);
+      const image = document.getElementById('image').value;
+      const text = document.getElementById('text').value;
+      const index = document.getElementById('edit-index').value;
+
+      if (index !== '') {
+        points[index] = { x, y, image, text };
+      } else {
+        points.push({ x, y, image, text });
+      }
+      resetForm();
+      renderTable();
+    });
+
+    function editPoint(i) {
+      const p = points[i];
+      document.getElementById('x').value = p.x;
+      document.getElementById('y').value = p.y;
+      document.getElementById('image').value = p.image;
+      document.getElementById('text').value = p.text;
+      document.getElementById('edit-index').value = i;
+    }
+
+    function deletePoint(i) {
+      if (confirm('Удалить эту точку?')) {
+        points.splice(i, 1);
+        renderTable();
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('point-form').reset();
+      document.getElementById('edit-index').value = '';
+    }
+
+    function uploadJSON(input) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function() {
+        points = JSON.parse(reader.result);
+        renderTable();
+      };
+      reader.readAsText(file);
+    }
+
+    function saveJSON() {
+      const blob = new Blob([JSON.stringify(points, null, 2)], { type: 'application/json' });
+      const fileHandle = window.showSaveFilePicker ? window.showSaveFilePicker({
+        suggestedName: 'points.json',
+        types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
+      }) : Promise.resolve();
+
+      if (fileHandle) {
+        fileHandle.then(async handle => {
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          alert('Файл сохранён!');
+        }).catch(() => {
+          // fallback to classic download if rejected
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'points.json';
+          a.click();
+        });
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'points.json';
+        a.click();
+      }
+    }
+
+    fetch('points.json')
+      .then(res => res.json())
+      .then(json => {
+        points = json;
+        renderTable();
+      })
+      .catch(err => console.warn('points.json не найден или не загружен'));
+  </script>
+</body>
+</html>
