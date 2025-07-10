@@ -136,8 +136,10 @@
         <button type="button" onclick="resetForm()">↩ Очистить</button>
       </form>
 
-
       <h2>Список точек</h2>
+      <label>Фильтр по тегу:
+        <input type="text" id="tagFilter" oninput="renderTable()" placeholder="например: лавочка">
+      </label>
       <table id="points-table">
         <thead>
           <tr>
@@ -180,11 +182,15 @@ preview.addEventListener('click', (e) => {
 });
 
 function renderTable() {
+  const filter = document.getElementById('tagFilter')?.value?.toLowerCase() || '';
   const tbody = document.querySelector('#points-table tbody');
   tbody.innerHTML = '';
   preview.querySelectorAll('.preview-marker').forEach(m => m.remove());
 
   points.forEach((p, i) => {
+    const tagMatch = filter === '' || (p.tags || []).some(tag => tag.toLowerCase().includes(filter));
+    if (!tagMatch) return;
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${i + 1}</td>
@@ -209,7 +215,6 @@ function renderTable() {
     marker.title = p.text;
     marker.draggable = true;
 
-    // Цвет иконки
     const colors = {
       blue: 'blue',
       green: 'green',
@@ -230,16 +235,12 @@ function renderTable() {
       const rect = preview.getBoundingClientRect();
       const relX = e.clientX - rect.left - offsetX;
       const relY = e.clientY - rect.top - offsetY;
-
       const normX = Math.round((relX / rect.width) * mapSize);
       const normY = Math.round((relY / rect.height) * mapSize);
-
       points[i].x = normX;
       points[i].y = normY;
-
       document.getElementById('x').value = normX;
       document.getElementById('y').value = normY;
-
       renderTable();
     });
 
@@ -247,7 +248,6 @@ function renderTable() {
     preview.appendChild(marker);
   });
 
-  // Обновление подсказок
   const textList = document.getElementById('recent-texts');
   textList.innerHTML = recentTexts.map(t => `<option value="${t}">`).join('');
 }
@@ -316,28 +316,10 @@ function uploadJSON(input) {
 
 function saveJSON() {
   const blob = new Blob([JSON.stringify(points, null, 2)], { type: 'application/json' });
-
-  if (window.showSaveFilePicker) {
-    window.showSaveFilePicker({
-      suggestedName: 'points.json',
-      types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
-    }).then(async handle => {
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      alert('Файл сохранён!');
-    }).catch(() => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'points.json';
-      a.click();
-    });
-  } else {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'points.json';
-    a.click();
-  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'points.json';
+  a.click();
 }
 
 fetch('points.json')
