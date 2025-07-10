@@ -133,17 +133,18 @@ function centerMap() {
 }
 
 function renderTiles() {
-  const rect = container.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
   const viewLeft = -originX / scale;
   const viewTop = -originY / scale;
-  const viewRight = viewLeft + rect.width / scale;
-  const viewBottom = viewTop + rect.height / scale;
+  const viewRight = viewLeft + containerRect.width / scale;
+  const viewBottom = viewTop + containerRect.height / scale;
 
   const startX = Math.floor(viewLeft / tileSize);
   const startY = Math.floor(viewTop / tileSize);
   const endX = Math.ceil(viewRight / tileSize);
   const endY = Math.ceil(viewBottom / tileSize);
 
+  // Удаляем старые тайлы
   for (const key in tileMap) {
     const [x, y] = key.split(',').map(Number);
     if (x < startX || x > endX || y < startY || y > endY) {
@@ -152,13 +153,14 @@ function renderTiles() {
     }
   }
 
+  // Добавляем нужные тайлы
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
       if (x < 0 || y < 0 || x >= tilesX || y >= tilesY) continue;
       const key = `${x},${y}`;
       if (tileMap[key]) continue;
       const tile = document.createElement('img');
-      tile.src = `tiles/tile_${x}_${y}.jpg`;
+      tile.src = `https://res.cloudinary.com/dypsj7tre/image/upload/tiles/tile_${x}_${y}.jpg`; // ← вот он путь
       tile.className = 'tile';
       tile.style.left = `${x * tileSize}px`;
       tile.style.top = `${y * tileSize}px`;
@@ -167,6 +169,7 @@ function renderTiles() {
     }
   }
 }
+
 
 function getIconColor(icon) {
   const map = {
