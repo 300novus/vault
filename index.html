@@ -3,327 +3,197 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Интерактивная карта</title>
+  <title>Админ-панель карты</title>
   <style>
-    html, body {
+    body {
+      font-family: sans-serif;
       margin: 0;
-      height: 100%;
-      overflow: hidden;
-      background-color: #fff;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
-    #map-container {
-      width: 100%;
-      height: 100%;
-      background-color: #fff;
+    header {
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      font-size: 20px;
+    }
+    main {
+      display: flex;
+      flex: 1;
+    }
+    #controls {
+      width: 40%;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid #ccc;
+    }
+    #map-preview {
+      flex: 1;
+      background: #ddd;
       position: relative;
       overflow: hidden;
-      touch-action: none;
       cursor: grab;
-      user-select: none;
     }
     #map-wrapper {
       position: absolute;
       top: 0;
       left: 0;
-      user-select: none;
       transform-origin: 0 0;
     }
-    .tile {
-      position: absolute;
-      width: 256px;
-      height: 256px;
-      pointer-events: none;
-    }
-    .marker {
-      position: absolute;
-      width: 50px;
-      height: 50px;
-      background-image: url('images/icon.png');
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      z-index: 10;
-      pointer-events: auto;
-    }
-    .tooltip {
-      position: absolute;
-      background: white;
-      border: 1px solid #ccc;
-      padding: 10px;
-      max-width: 50vw;
-      max-height: 50vh;
-      overflow: auto;
-      display: none;
-      z-index: 1000;
-    }
-    .tooltip img {
+    #map-image {
+      display: block;
       width: 100%;
       height: auto;
-      cursor: pointer;
+      pointer-events: none;
     }
-    .modal {
+    .preview-marker {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: red;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: grab;
+    }
+    .preview-marker:active {
+      cursor: grabbing;
+    }
+    .preview-tooltip {
+      position: absolute;
+      background: white;
+      border: 1px solid #aaa;
+      padding: 6px;
+      font-size: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 9999;
+      max-width: 200px;
+      pointer-events: none;
+    }
+    .preview-tooltip img {
+      width: 100%;
+      height: auto;
+      margin-bottom: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    button {
+      margin-right: 6px;
+    }
+    form input, form textarea {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 6px;
+      font-size: 14px;
+    }
+    #login-screen {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.9);
+      inset: 0;
+      background: #000000cc;
+      color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 2000;
-      display: none;
+      flex-direction: column;
+      z-index: 10000;
     }
-    .modal img {
-      max-width: 90vw;
-      max-height: 90vh;
+    #login-screen input {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    #map-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    #map-controls button {
+      background: white;
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-<div id="map-container">
-  <div id="map-wrapper"></div>
-</div>
-<div id="modal" class="modal" onclick="this.style.display='none'">
-  <img src="" alt="Полноэкранное изображение" id="modal-img">
-</div>
+  <div id="login-screen">
+    <h2>Введите пароль для доступа</h2>
+    <input type="password" id="admin-password" placeholder="Пароль" onkeydown="if(event.key==='Enter') checkPassword()">
+    <button onclick="checkPassword()">Войти</button>
+  </div>
 
-<script>
-  const container = document.getElementById('map-container');
-  const mapWrapper = document.getElementById('map-wrapper');
-  const modal = document.getElementById('modal');
-  const modalImg = document.getElementById('modal-img');
+  <header>🗺 Админ-панель: точки на карте</header>
+  <main>
+    <section id="controls">
+      <h2>Добавить / Редактировать точку</h2>
+      <form id="point-form">
+        <input type="hidden" id="edit-index">
+        <label>X координата:<input type="number" id="x"></label>
+        <label>Y координата:<input type="number" id="y"></label>
+        <label>Ссылка на картинку:<input type="text" id="image"></label>
+        <label>Описание:<textarea id="text"></textarea></label>
+        <button type="submit">💾 Сохранить</button>
+        <button type="button" onclick="resetForm()">↩ Очистить</button>
+      </form>
 
-  let scale = 1;
-  let originX = 0;
-  let originY = 0;
-  let isDragging = false;
-  let startX, startY;
-  let activeTooltip = null;
-  let activeMarker = null;
-  let initialPinchDistance = null;
-  let initialScale = 1;
-  let pinchCenter = null;
-  let pinchScreen = null;
+      <h2>Список точек</h2>
+      <table id="points-table">
+        <thead>
+          <tr><th>#</th><th>X</th><th>Y</th><th>Фото</th><th>Описание</th><th>Действия</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
-  const tileSize = 256;
-const tilesX = 113;
-const tilesY = 113;
-const mapWidth = tileSize * tilesX; // 28928
-const mapHeight = tileSize * tilesY;
-  const tileMap = {};
+      <button onclick="saveJSON()">💾 Обновить points.json</button>
+      <input type="file" accept="application/json" onchange="uploadJSON(this)">
+    </section>
+    <section id="map-preview">
+      <div id="map-controls">
+        <button onclick="zoomIn()">➕ Увеличить</button>
+        <button onclick="zoomOut()">➖ Уменьшить</button>
+        <button onclick="resetZoom()">🔄 Сброс масштаба</button>
+      </div>
+      <div id="map-wrapper">
+        <img id="map-image" src="tiles/tile_0_0.jpg" alt="Карта">
+      </div>
+      <div id="hover-preview" class="preview-tooltip" style="display:none;"></div>
+    </section>
+  </main>
 
-  function centerMap() {
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    originX = (containerWidth - mapWidth) / 2;
-    originY = (containerHeight - mapHeight) / 2;
-    updateTransform();
-  }
+  <script>
+    const tooltip = document.getElementById('hover-preview');
 
-  function renderTiles() {
-    const containerRect = container.getBoundingClientRect();
-    const viewLeft = -originX / scale;
-    const viewTop = -originY / scale;
-    const viewRight = viewLeft + containerRect.width / scale;
-    const viewBottom = viewTop + containerRect.height / scale;
-
-    const startX = Math.floor(viewLeft / tileSize);
-    const startY = Math.floor(viewTop / tileSize);
-    const endX = Math.ceil(viewRight / tileSize);
-    const endY = Math.ceil(viewBottom / tileSize);
-
-    // Remove old tiles
-    for (const key in tileMap) {
-      const [x, y] = key.split(',').map(Number);
-      if (x < startX || x > endX || y < startY || y > endY) {
-        mapWrapper.removeChild(tileMap[key]);
-        delete tileMap[key];
-      }
+    function showPreviewTooltip(marker, point) {
+      tooltip.innerHTML = `<img src="${point.image}"><div>${point.text}</div>`;
+      tooltip.style.left = (marker.offsetLeft + 25) + 'px';
+      tooltip.style.top = (marker.offsetTop - 10) + 'px';
+      tooltip.style.display = 'block';
     }
 
-    // Add visible tiles
-    for (let y = startY; y <= endY; y++) {
-      for (let x = startX; x <= endX; x++) {
-        if (x < 0 || y < 0 || x >= tilesX || y >= tilesY) continue;
-        const key = `${x},${y}`;
-        if (tileMap[key]) continue;
-        const tile = document.createElement('img');
-        tile.src = `https://res.cloudinary.com/dypsj7tre/image/upload/tiles/tile_${x}_${y}.jpg`;
-        tile.className = 'tile';
-        tile.style.left = `${x * tileSize}px`;
-        tile.style.top = `${y * tileSize}px`;
-        mapWrapper.appendChild(tile);
-        tileMap[key] = tile;
-      }
+    function hidePreviewTooltip() {
+      tooltip.style.display = 'none';
     }
-  }
 
-  function updateTransform() {
-    mapWrapper.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    document.querySelectorAll('.marker').forEach(m => {
-      m.style.transform = `scale(${1 / scale})`;
-    });
-    updateTooltipPosition();
-    renderTiles();
-  }
-
-  function updateTooltipPosition() {
-    if (activeTooltip && activeTooltip.dataset.x && activeTooltip.dataset.y) {
-      const x = parseFloat(activeTooltip.dataset.x);
-      const y = parseFloat(activeTooltip.dataset.y);
-      const screenX = originX + x * scale;
-      const screenY = originY + y * scale;
-      activeTooltip.style.left = `${screenX}px`;
-      activeTooltip.style.top = `${screenY + 60}px`;
-    }
-  }
-
-  fetch('points.json')
-    .then(res => res.json())
-    .then(points => {
-      points.forEach((point, i) => {
-        const marker = document.createElement('div');
-        marker.className = 'marker';
-        marker.style.left = `${point.x}px`;
-        marker.style.top = `${point.y}px`;
-
-        const tooltip = document.createElement('div');
-        tooltip.className = 'tooltip';
-        tooltip.innerHTML = `
-          <img src="${point.image}" alt="Точка">
-          <p>${point.text}</p>
-        `;
-
-        const img = tooltip.querySelector('img');
-        img.addEventListener('click', (e) => {
-          e.stopPropagation();
-          modalImg.src = point.image;
-          modal.style.display = 'flex';
-        });
-
-        marker.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (activeTooltip && activeTooltip !== tooltip) {
-            activeTooltip.style.display = 'none';
-          }
-
-          if (tooltip.style.display === 'block') {
-            tooltip.style.display = 'none';
-            activeTooltip = null;
-            activeMarker = null;
-          } else {
-            tooltip.style.display = 'block';
-            activeTooltip = tooltip;
-            activeMarker = marker;
-          }
-          updateTooltipPosition();
-        });
-
-        mapWrapper.appendChild(marker);
-        document.body.appendChild(tooltip);
-
-        tooltip.dataset.x = point.x;
-        tooltip.dataset.y = point.y;
-      });
-    });
-
-  document.body.addEventListener('click', (e) => {
-    if (activeTooltip && !e.target.closest('.tooltip')) {
-      activeTooltip.style.display = 'none';
-      activeTooltip = null;
-      activeMarker = null;
-    }
-  });
-
-  container.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const rect = container.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left - originX;
-    const offsetY = e.clientY - rect.top - originY;
-    const delta = e.deltaY < 0 ? 1.1 : 0.9;
-    const newScale = scale * delta;
-    if (newScale < 0.2 || newScale > 6) return;
-    originX -= offsetX * (delta - 1);
-    originY -= offsetY * (delta - 1);
-    scale = newScale;
-    updateTransform();
-  }, { passive: false });
-
-  container.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 2) {
-      initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
-      initialScale = scale;
-      const rect = container.getBoundingClientRect();
-      const screenX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-      const screenY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-      pinchScreen = { x: screenX, y: screenY };
-      pinchCenter = {
-        x: (screenX - originX) / scale,
-        y: (screenY - originY) / scale
-      };
-    } else if (e.touches.length === 1) {
-      isDragging = true;
-      startX = e.touches[0].clientX - originX;
-      startY = e.touches[0].clientY - originY;
-    }
-  });
-
-  container.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 2 && initialPinchDistance !== null && pinchCenter && pinchScreen) {
-      const currentDistance = getDistance(e.touches[0], e.touches[1]);
-      const scaleFactor = currentDistance / initialPinchDistance;
-      const newScale = initialScale * scaleFactor;
-      if (newScale >= 0.5 && newScale <= 5) {
-        scale = newScale;
-        originX = pinchScreen.x - pinchCenter.x * scale;
-        originY = pinchScreen.y - pinchCenter.y * scale;
-        updateTransform();
-      }
-    } else if (e.touches.length === 1 && isDragging) {
-      originX = e.touches[0].clientX - startX;
-      originY = e.touches[0].clientY - startY;
-      updateTransform();
-    }
-  });
-
-  container.addEventListener('touchend', () => {
-    initialPinchDistance = null;
-    pinchCenter = null;
-    pinchScreen = null;
-    isDragging = false;
-  });
-
-  container.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    isDragging = true;
-    startX = e.clientX - originX;
-    startY = e.clientY - originY;
-    container.style.cursor = 'grabbing';
-  });
-
-  container.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    originX = e.clientX - startX;
-    originY = e.clientY - startY;
-    updateTransform();
-  });
-
-  container.addEventListener('mouseup', () => {
-    isDragging = false;
-    container.style.cursor = 'grab';
-  });
-
-  function getDistance(t1, t2) {
-    const dx = t2.clientX - t1.clientX;
-    const dy = t2.clientY - t1.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-
-  window.addEventListener('load', () => {
-    centerMap();
-    renderTiles();
-  });
-</script>
+    // внутри renderTable() добавим
+    // marker.addEventListener('mouseenter', () => showPreviewTooltip(marker, p));
+    // marker.addEventListener('mouseleave', hidePreviewTooltip);
+  </script>
 </body>
 </html>
