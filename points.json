@@ -22,5 +22,28 @@
       "лавочка"
     ],
     "icon": "blue"
+  },
+  {
+    "x": 10265,
+    "y": 11795,
+    "image": "https://sc01.alicdn.com/kf/HTB1LEAvc.WF3KVjSZPhq6xclXXaB/Wpc-Seating-Stand-Salvaged-3-Seat-Plastic.jpg_350x350.jpg",
+    "text": "Скамья",
+    "category": "Скамейки и МАФ",
+    "tags": [
+      ""
+    ],
+    "icon": "yellow"
+  },
+  {
+    "x": 12523,
+    "y": 10619,
+    "image": "https://ecpu.ru/new-buildings/novosibirsk/1941/zhk-evolyuciya-novosibirsk-6-thumb.jpg",
+    "text": "Альпийские горки",
+    "category": "Благоустройство территорий",
+    "tags": [
+      "Зелень",
+      "брусчатка"
+    ],
+    "icon": "yellow"
   }
 ]
