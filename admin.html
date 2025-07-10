@@ -33,19 +33,11 @@
       flex: 1;
       background: #ddd;
       position: relative;
-      overflow: hidden;
-      cursor: grab;
-    }
-    #map-wrapper {
-      position: absolute;
-      top: 0;
-      left: 0;
-      transform-origin: 0 0;
     }
     #map-image {
-      display: block;
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: contain;
       pointer-events: none;
     }
     .preview-marker {
@@ -99,21 +91,6 @@
       font-size: 16px;
       margin-top: 10px;
     }
-    #map-controls {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    #map-controls button {
-      background: white;
-      border: 1px solid #ccc;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -149,27 +126,15 @@
       <input type="file" accept="application/json" onchange="uploadJSON(this)">
     </section>
     <section id="map-preview">
-      <div id="map-controls">
-        <button onclick="zoomIn()">➕ Увеличить</button>
-        <button onclick="zoomOut()">➖ Уменьшить</button>
-        <button onclick="resetZoom()">🔄 Сброс масштаба</button>
-      </div>
-      <div id="map-wrapper">
-        <img id="map-image" src="tiles/tile_0_0.jpg" alt="Карта">
-      </div>
+      <img id="map-image" src="tiles/tile_0_0.jpg" alt="Карта">
     </section>
   </main>
 
   <script>
     let points = [];
-    let scale = 1;
-    let originX = 0;
-    let originY = 0;
-    const mapSize = 28928;
-
     const preview = document.getElementById('map-preview');
-    const wrapper = document.getElementById('map-wrapper');
     const mapImage = document.getElementById('map-image');
+    const mapSize = 28928;
 
     function checkPassword() {
       const password = document.getElementById('admin-password').value;
@@ -183,7 +148,7 @@
     function renderTable() {
       const tbody = document.querySelector('#points-table tbody');
       tbody.innerHTML = '';
-      wrapper.querySelectorAll('.preview-marker').forEach(m => m.remove());
+      preview.querySelectorAll('.preview-marker').forEach(m => m.remove());
 
       points.forEach((p, i) => {
         const row = document.createElement('tr');
@@ -202,8 +167,8 @@
 
         const marker = document.createElement('div');
         marker.className = 'preview-marker';
-        marker.style.left = (p.x * scale + originX) + 'px';
-        marker.style.top = (p.y * scale + originY) + 'px';
+        marker.style.left = (p.x / mapSize * 100) + '%';
+        marker.style.top = (p.y / mapSize * 100) + '%';
         marker.title = p.text;
         marker.draggable = true;
 
@@ -220,8 +185,8 @@
           const relX = e.clientX - rect.left - offsetX;
           const relY = e.clientY - rect.top - offsetY;
 
-          const normX = Math.round((relX - originX) / scale);
-          const normY = Math.round((relY - originY) / scale);
+          const normX = Math.round((relX / rect.width) * mapSize);
+          const normY = Math.round((relY / rect.height) * mapSize);
 
           points[i].x = normX;
           points[i].y = normY;
@@ -233,7 +198,7 @@
         });
 
         marker.onclick = () => editPoint(i);
-        wrapper.appendChild(marker);
+        preview.appendChild(marker);
       });
     }
 
@@ -286,123 +251,32 @@
     }
 
     function saveJSON() {
-  const blob = new Blob([JSON.stringify(points, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(points, null, 2)], { type: 'application/json' });
+      const fileHandle = window.showSaveFilePicker ? window.showSaveFilePicker({
+        suggestedName: 'points.json',
+        types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
+      }) : Promise.resolve();
 
-  if ('showSaveFilePicker' in window) {
-    window.showSaveFilePicker({
-      suggestedName: 'points.json',
-      types: [
-        {
-          description: 'JSON File',
-          accept: { 'application/json': ['.json'] }
-        }
-      ]
-    }).then(async handle => {
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      alert('Файл сохранён!');
-    }).catch(err => {
-      console.warn('Сохранение отменено или не поддерживается:', err);
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'points.json';
-      a.click();
-    });
-  } else {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'points.json';
-    a.click();
-  }
-};
-
-  if ('showSaveFilePicker' in window) {
-    window.showSaveFilePicker({
-      suggestedName: 'points.json',
-      types: [
-        {
-          description: 'JSON File',
-          accept: { 'application/json': ['.json'] }
-        }
-      ]
-    }).then(async handle => {
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      alert('Файл сохранён!');
-    }).catch(err => {
-      console.warn('Сохранение отменено или не поддерживается:', err);
-    });
-  } else {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'points.json';
-    a.click();
-  }
-});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'points.json';
-      a.click();
+      if (fileHandle) {
+        fileHandle.then(async handle => {
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          alert('Файл сохранён!');
+        }).catch(() => {
+          // fallback to classic download if rejected
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'points.json';
+          a.click();
+        });
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'points.json';
+        a.click();
+      }
     }
-
-    function zoomIn() {
-      scale *= 1.2;
-      updateTransform();
-      renderTable();
-    }
-
-    function zoomOut() {
-      scale *= 0.8;
-      updateTransform();
-      renderTable();
-    }
-
-    function resetZoom() {
-      scale = 1;
-      originX = 0;
-      originY = 0;
-      updateTransform();
-      renderTable();
-    }
-
-    function updateTransform() {
-      wrapper.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    }
-
-    preview.addEventListener('wheel', e => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 1.1 : 0.9;
-      const rect = preview.getBoundingClientRect();
-      const offsetX = e.clientX - rect.left - originX;
-      const offsetY = e.clientY - rect.top - originY;
-
-      originX -= offsetX * (delta - 1);
-      originY -= offsetY * (delta - 1);
-      scale *= delta;
-
-      updateTransform();
-      renderTable();
-    });
-
-    preview.addEventListener('mousedown', e => {
-      e.preventDefault();
-      let startX = e.clientX - originX;
-      let startY = e.clientY - originY;
-      const move = e => {
-        originX = e.clientX - startX;
-        originY = e.clientY - startY;
-        updateTransform();
-        renderTable();
-      };
-      const up = () => {
-        window.removeEventListener('mousemove', move);
-        window.removeEventListener('mouseup', up);
-      };
-      window.addEventListener('mousemove', move);
-      window.addEventListener('mouseup', up);
-    });
 
     fetch('points.json')
       .then(res => res.json())
@@ -410,7 +284,7 @@
         points = json;
         renderTable();
       })
-      .catch(() => console.warn('points.json не загружен'));
+      .catch(err => console.warn('points.json не найден или не загружен'));
   </script>
 </body>
 </html>
