@@ -1,319 +1,185 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Интерактивная карта</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VaultMap — городской навигатор</title>
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      overflow: hidden;
-      background-color: #fff;
+    :root { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #e8edf3; }
+    #app { height: 100%; position: relative; }
+    #toolbar {
+      position: absolute; top: 12px; left: 12px; z-index: 20;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      background: rgba(255,255,255,.95); backdrop-filter: blur(6px);
+      padding: 10px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.12);
     }
-    #map-container {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      overflow: hidden;
-      touch-action: none;
-      cursor: grab;
-      user-select: none;
+    #toolbar input, #toolbar select { padding: 8px; border: 1px solid #cfd8e3; border-radius: 8px; min-width: 160px; }
+    #toolbar a { text-decoration: none; color: #0b57d0; font-weight: 600; }
+    #viewport {
+      width: 100%; height: 100%; overflow: hidden; position: relative;
+      touch-action: none; cursor: grab;
     }
-    #map-wrapper {
-      position: absolute;
-      top: 0;
-      left: 0;
-      transform-origin: 0 0;
-    }
-    .tile {
-      position: absolute;
-      width: 256px;
-      height: 256px;
-      pointer-events: none;
+    #stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+    #map {
+      position: absolute; left: 0; top: 0; width: 4200px; height: 3000px;
+      border: 1px solid #9db1c7;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4200' height='3000' viewBox='0 0 4200 3000'%3E%3Crect width='4200' height='3000' fill='%23f6f9fc'/%3E%3Cg stroke='%23d9e3ef' stroke-width='2'%3E%3Cpath d='M0 400H4200M0 800H4200M0 1200H4200M0 1600H4200M0 2000H4200M0 2400H4200M600 0V3000M1200 0V3000M1800 0V3000M2400 0V3000M3000 0V3000M3600 0V3000'/%3E%3C/g%3E%3Cg fill='none' stroke='%2392a8c2' stroke-width='26' stroke-linecap='round'%3E%3Cpath d='M250 300C800 650 1300 580 1950 880C2650 1220 3100 1280 3850 1710'/%3E%3Cpath d='M600 2600C1300 2150 2000 2100 2660 1650C3140 1310 3400 1050 3700 560'/%3E%3C/g%3E%3Cg fill='%23b2d4ad'%3E%3Cellipse cx='1200' cy='1250' rx='300' ry='220'/%3E%3Cellipse cx='3060' cy='980' rx='380' ry='250'/%3E%3Cellipse cx='2500' cy='2180' rx='340' ry='260'/%3E%3C/g%3E%3Cg fill='%2377b5ff' opacity='.55'%3E%3Cpath d='M200 1800C900 1650 1400 1750 2100 1900C2700 2030 3400 2140 4100 2050V2500H200Z'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: cover;
     }
     .marker {
-      position: absolute;
-      width: 50px;
-      height: 50px;
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      z-index: 10;
-      pointer-events: auto;
-      border-radius: 50%;
+      position: absolute; width: 26px; height: 26px; border-radius: 50%;
+      border: 2px solid #fff; transform: translate(-50%, -50%);
+      cursor: pointer; box-shadow: 0 6px 12px rgba(0,0,0,.25);
     }
-    .tooltip {
-      position: absolute;
-      background: white;
-      border: 1px solid #ccc;
-      padding: 10px;
-      max-width: 50vw;
-      max-height: 50vh;
-      overflow: auto;
-      display: none;
-      z-index: 1000;
+    .marker::after {
+      content: ''; position: absolute; left: 50%; top: 96%; width: 2px; height: 14px;
+      background: #374151; transform: translateX(-50%);
     }
-    .tooltip img {
-      width: 100%;
-      height: auto;
-      cursor: pointer;
+    #card {
+      position: absolute; right: 12px; top: 12px; z-index: 20; width: min(360px, calc(100vw - 24px));
+      background: rgba(255,255,255,.97); border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.15);
+      padding: 14px; display: none;
     }
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.9);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    .modal img {
-      max-width: 90vw;
-      max-height: 90vh;
-    }
-    #filter-panel {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: white;
-      padding: 10px;
-      border-radius: 6px;
-      z-index: 1001;
-      font-family: sans-serif;
-      font-size: 14px;
-    }
+    #card img { width: 100%; border-radius: 10px; max-height: 180px; object-fit: cover; }
+    #hint { position: absolute; bottom: 12px; left: 12px; z-index: 20; font-size: 13px; background: rgba(0,0,0,.55); color: #fff; padding: 7px 10px; border-radius: 8px; }
   </style>
 </head>
 <body>
-  <div id="map-container">
-    <div id="map-wrapper"></div>
-    <div id="filter-panel">
-      <label>Категория:
-        <select id="categoryFilter" onchange="applyCategoryFilter()">
-          <option value="">Все</option>
-        </select>
-      </label>
+  <div id="app">
+    <div id="toolbar">
+      <input id="search" placeholder="Поиск места..." />
+      <select id="category"><option value="">Все категории</option></select>
+      <a href="admin.html">Админ-панель</a>
     </div>
-  </div>
 
-  <div id="modal" class="modal" onclick="this.style.display='none'">
-    <img src="" alt="Полноэкранное изображение" id="modal-img">
+    <div id="viewport">
+      <div id="stage">
+        <div id="map"></div>
+      </div>
+    </div>
+
+    <aside id="card"></aside>
+    <div id="hint">Колесо — масштаб, перетаскивание — перемещение карты.</div>
   </div>
 
 <script>
-const container = document.getElementById('map-container');
-const mapWrapper = document.getElementById('map-wrapper');
-const modal = document.getElementById('modal');
-const modalImg = document.getElementById('modal-img');
+const MAP_WIDTH = 4200;
+const MAP_HEIGHT = 3000;
+const STORAGE_KEY = 'vault-map-points';
+const colors = { default: '#dc2626', blue: '#2563eb', green: '#16a34a', yellow: '#ca8a04', black: '#111827' };
 
-const tileSize = 256;
-const tilesX = 113;
-const tilesY = 113;
-const mapWidth = tileSize * tilesX;
-const mapHeight = tileSize * tilesY;
-const tileMap = {};
-let scale = 1, originX = 0, originY = 0;
-let isDragging = false, startX = 0, startY = 0;
-let initialPinchDistance = null, initialScale = 1;
-let pinchCenter = null, pinchScreen = null;
-let activeTooltip = null;
-let pointsData = [];
-let currentCategoryFilter = '';
+const viewport = document.getElementById('viewport');
+const stage = document.getElementById('stage');
+const mapEl = document.getElementById('map');
+const card = document.getElementById('card');
+const searchInput = document.getElementById('search');
+const categorySelect = document.getElementById('category');
+
+let points = [];
+let scale = 0.35;
+let tx = 0;
+let ty = 0;
+let dragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+
+function applyTransform() {
+  stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+}
 
 function centerMap() {
-  const cw = container.clientWidth;
-  const ch = container.clientHeight;
-  originX = (cw - mapWidth) / 2;
-  originY = (ch - mapHeight) / 2;
-  updateTransform();
+  tx = (viewport.clientWidth - MAP_WIDTH * scale) / 2;
+  ty = (viewport.clientHeight - MAP_HEIGHT * scale) / 2;
+  applyTransform();
 }
 
-function renderTiles() {
-  const containerRect = container.getBoundingClientRect();
-  const viewLeft = -originX / scale;
-  const viewTop = -originY / scale;
-  const viewRight = viewLeft + containerRect.width / scale;
-  const viewBottom = viewTop + containerRect.height / scale;
-
-  const startX = Math.floor(viewLeft / tileSize);
-  const startY = Math.floor(viewTop / tileSize);
-  const endX = Math.ceil(viewRight / tileSize);
-  const endY = Math.ceil(viewBottom / tileSize);
-
-  // Удаляем старые тайлы
-  for (const key in tileMap) {
-    const [x, y] = key.split(',').map(Number);
-    if (x < startX || x > endX || y < startY || y > endY) {
-      mapWrapper.removeChild(tileMap[key]);
-      delete tileMap[key];
-    }
+function loadPoints() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    points = JSON.parse(raw);
+    render();
+    return;
   }
-
-  // Добавляем нужные тайлы
-  for (let y = startY; y <= endY; y++) {
-    for (let x = startX; x <= endX; x++) {
-      if (x < 0 || y < 0 || x >= tilesX || y >= tilesY) continue;
-      const key = `${x},${y}`;
-      if (tileMap[key]) continue;
-      const tile = document.createElement('img');
-      tile.src = `https://res.cloudinary.com/dypsj7tre/image/upload/tiles/tile_${x}_${y}.jpg`; // ← вот он путь
-      tile.className = 'tile';
-      tile.style.left = `${x * tileSize}px`;
-      tile.style.top = `${y * tileSize}px`;
-      mapWrapper.appendChild(tile);
-      tileMap[key] = tile;
-    }
-  }
+  fetch('points.json').then(r => r.json()).then(data => { points = data; render(); }).catch(() => render());
 }
 
+function render() {
+  mapEl.querySelectorAll('.marker').forEach(el => el.remove());
+  const search = searchInput.value.trim().toLowerCase();
+  const category = categorySelect.value;
 
-function getIconColor(icon) {
-  const map = {
-    default: 'red',
-    blue: 'blue',
-    green: 'green',
-    yellow: 'gold',
-    black: '#000'
-  };
-  return map[icon] || map.default;
-}
+  const visible = points.filter(p => {
+    const byCategory = !category || p.category === category;
+    const bySearch = !search || (p.text || '').toLowerCase().includes(search) || (p.category || '').toLowerCase().includes(search);
+    return byCategory && bySearch;
+  });
 
-function renderMarkers(points) {
-  document.querySelectorAll('.marker').forEach(m => m.remove());
-  document.querySelectorAll('.tooltip').forEach(t => t.remove());
-
-  points.forEach(point => {
-    if (currentCategoryFilter && point.category !== currentCategoryFilter) return;
-
-    const marker = document.createElement('div');
+  visible.forEach((p) => {
+    const marker = document.createElement('button');
     marker.className = 'marker';
-    marker.style.left = `${point.x}px`;
-    marker.style.top = `${point.y}px`;
-    marker.style.backgroundColor = getIconColor(point.icon || 'default');
-
-    const tooltip = document.createElement('div');
-    tooltip.className = 'tooltip';
-    tooltip.innerHTML = `
-      <img src="${point.image}" alt="Точка">
-      <p>${point.text}</p>
-    `;
-
-    const img = tooltip.querySelector('img');
-    img.onclick = (e) => {
+    marker.style.left = `${p.x}px`;
+    marker.style.top = `${p.y}px`;
+    marker.style.background = colors[p.icon] || colors.default;
+    marker.addEventListener('click', (e) => {
       e.stopPropagation();
-      modalImg.src = point.image;
-      modal.style.display = 'flex';
-    };
-
-    marker.onclick = (e) => {
-      e.stopPropagation();
-      if (activeTooltip && activeTooltip !== tooltip) activeTooltip.style.display = 'none';
-      if (tooltip.style.display === 'block') {
-        tooltip.style.display = 'none';
-        activeTooltip = null;
-      } else {
-        tooltip.style.display = 'block';
-        activeTooltip = tooltip;
-      }
-      updateTooltipPosition();
-    };
-
-    mapWrapper.appendChild(marker);
-    document.body.appendChild(tooltip);
-    tooltip.dataset.x = point.x;
-    tooltip.dataset.y = point.y;
+      card.style.display = 'block';
+      card.innerHTML = `
+        ${p.image ? `<img src="${p.image}" alt="${p.text}">` : ''}
+        <h3>${p.text || 'Без названия'}</h3>
+        <p><b>Категория:</b> ${p.category || '—'}</p>
+        <p>${(p.tags || []).join(', ')}</p>
+      `;
+    });
+    mapEl.appendChild(marker);
   });
 
-  updateTooltipPosition();
+  fillCategories();
 }
 
-function updateTooltipPosition() {
-  if (activeTooltip && activeTooltip.dataset.x) {
-    const x = parseFloat(activeTooltip.dataset.x);
-    const y = parseFloat(activeTooltip.dataset.y);
-    const screenX = originX + x * scale;
-    const screenY = originY + y * scale;
-    activeTooltip.style.left = `${screenX}px`;
-    activeTooltip.style.top = `${screenY + 60}px`;
-  }
+function fillCategories() {
+  const current = categorySelect.value;
+  const categories = [...new Set(points.map(p => p.category).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'ru'));
+  categorySelect.innerHTML = '<option value="">Все категории</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+  categorySelect.value = current;
 }
 
-function buildCategoryFilter(points) {
-  const select = document.getElementById('categoryFilter');
-  const categories = new Set();
-  points.forEach(p => {
-    if (p.category) categories.add(p.category);
-  });
-  [...categories].sort().forEach(cat => {
-    const opt = document.createElement('option');
-    opt.value = cat;
-    opt.textContent = cat;
-    select.appendChild(opt);
-  });
-}
-
-function applyCategoryFilter() {
-  const select = document.getElementById('categoryFilter');
-  currentCategoryFilter = select.value;
-  renderMarkers(pointsData);
-}
-
-function updateTransform() {
-  mapWrapper.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-  document.querySelectorAll('.marker').forEach(m => {
-    m.style.transform = `scale(${1 / scale})`;
-  });
-  updateTooltipPosition();
-  renderTiles();
-}
-
-fetch('points.json')
-  .then(res => res.json())
-  .then(points => {
-    pointsData = points;
-    renderMarkers(points);
-    buildCategoryFilter(points);
-  });
-
-container.addEventListener('wheel', (e) => {
+viewport.addEventListener('wheel', (e) => {
   e.preventDefault();
-  const rect = container.getBoundingClientRect();
-  const offsetX = e.clientX - rect.left - originX;
-  const offsetY = e.clientY - rect.top - originY;
-  const delta = e.deltaY < 0 ? 1.1 : 0.9;
-  const newScale = scale * delta;
-  if (newScale < 0.2 || newScale > 6) return;
-  originX -= offsetX * (delta - 1);
-  originY -= offsetY * (delta - 1);
-  scale = newScale;
-  updateTransform();
+  const old = scale;
+  const delta = e.deltaY < 0 ? 1.12 : 0.88;
+  scale = Math.max(0.2, Math.min(2.8, scale * delta));
+  const rect = viewport.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  tx = px - (px - tx) * (scale / old);
+  ty = py - (py - ty) * (scale / old);
+  applyTransform();
 }, { passive: false });
 
-container.addEventListener('mousedown', (e) => {
-  isDragging = true;
-  startX = e.clientX - originX;
-  startY = e.clientY - originY;
-  container.style.cursor = 'grabbing';
+viewport.addEventListener('mousedown', (e) => {
+  dragging = true;
+  dragStartX = e.clientX - tx;
+  dragStartY = e.clientY - ty;
+  viewport.style.cursor = 'grabbing';
 });
-container.addEventListener('mousemove', (e) => {
-  if (!isDragging) return;
-  originX = e.clientX - startX;
-  originY = e.clientY - startY;
-  updateTransform();
+window.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  tx = e.clientX - dragStartX;
+  ty = e.clientY - dragStartY;
+  applyTransform();
 });
-container.addEventListener('mouseup', () => {
-  isDragging = false;
-  container.style.cursor = 'grab';
+window.addEventListener('mouseup', () => {
+  dragging = false;
+  viewport.style.cursor = 'grab';
 });
 
-window.addEventListener('load', () => {
-  centerMap();
-  renderTiles();
-});
+searchInput.addEventListener('input', render);
+categorySelect.addEventListener('change', render);
+viewport.addEventListener('click', () => card.style.display = 'none');
+window.addEventListener('resize', centerMap);
+window.addEventListener('load', () => { centerMap(); loadPoints(); });
 </script>
 </body>
 </html>

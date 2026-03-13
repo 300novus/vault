@@ -2,333 +2,255 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Админ-панель карты</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VaultMap — админ-панель</title>
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+    :root { font-family: Inter, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; display: grid; grid-template-columns: 380px 1fr; height: 100vh; }
+    #panel { border-right: 1px solid #dbe2ea; padding: 14px; overflow: auto; background: #f8fbff; }
+    #panel h1 { margin: 0 0 12px; font-size: 22px; }
+    #panel input, #panel textarea, #panel select, #panel button { width: 100%; margin-bottom: 8px; padding: 8px; border-radius: 8px; border: 1px solid #cfd8e3; }
+    #panel button { cursor: pointer; border: none; background: #0b57d0; color: white; font-weight: 600; }
+    #panel button.secondary { background: #64748b; }
+    #panel .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    #map-wrap { position: relative; overflow: hidden; background: #eaf0f7; }
+    #viewport { width: 100%; height: 100%; touch-action: none; cursor: grab; }
+    #stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+    #map {
+      position: absolute; left: 0; top: 0; width: 4200px; height: 3000px;
+      border: 1px solid #9db1c7;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4200' height='3000' viewBox='0 0 4200 3000'%3E%3Crect width='4200' height='3000' fill='%23f6f9fc'/%3E%3Cg stroke='%23d9e3ef' stroke-width='2'%3E%3Cpath d='M0 400H4200M0 800H4200M0 1200H4200M0 1600H4200M0 2000H4200M0 2400H4200M600 0V3000M1200 0V3000M1800 0V3000M2400 0V3000M3000 0V3000M3600 0V3000'/%3E%3C/g%3E%3Cg fill='none' stroke='%2392a8c2' stroke-width='26' stroke-linecap='round'%3E%3Cpath d='M250 300C800 650 1300 580 1950 880C2650 1220 3100 1280 3850 1710'/%3E%3Cpath d='M600 2600C1300 2150 2000 2100 2660 1650C3140 1310 3400 1050 3700 560'/%3E%3C/g%3E%3Cg fill='%23b2d4ad'%3E%3Cellipse cx='1200' cy='1250' rx='300' ry='220'/%3E%3Cellipse cx='3060' cy='980' rx='380' ry='250'/%3E%3Cellipse cx='2500' cy='2180' rx='340' ry='260'/%3E%3C/g%3E%3Cg fill='%2377b5ff' opacity='.55'%3E%3Cpath d='M200 1800C900 1650 1400 1750 2100 1900C2700 2030 3400 2140 4100 2050V2500H200Z'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: cover;
     }
-    header {
-      background: #333;
-      color: white;
-      padding: 10px 20px;
-      font-size: 20px;
-    }
-    main {
-      display: flex;
-      flex: 1;
-    }
-    #controls {
-      width: 40%;
-      padding: 20px;
-      overflow-y: auto;
-      border-right: 1px solid #ccc;
-    }
-    #map-preview {
-      flex: 1;
-      background: #ddd;
-      position: relative;
-    }
-    #map-image {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      pointer-events: none;
-    }
-    .preview-marker {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      background: red;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      cursor: grab;
-    }
-    .preview-marker:active {
-      cursor: grabbing;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 6px;
-      text-align: left;
-      font-size: 14px;
-    }
-    th {
-      background-color: #f0f0f0;
-    }
-    button {
-      margin-right: 6px;
-    }
-    form input, form textarea, form select {
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 6px;
-      font-size: 14px;
-    }
-    #login-screen {
-      position: fixed;
-      inset: 0;
-      background: #000000cc;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      z-index: 10000;
-    }
-    #login-screen input {
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 10px;
-    }
+    .marker { position: absolute; width: 20px; height: 20px; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,.25); cursor: move; }
+    #list { margin-top: 10px; }
+    #list table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    #list td, #list th { border: 1px solid #d4deea; padding: 4px; }
+    #auth { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: flex; align-items: center; justify-content: center; z-index: 99; }
+    #auth-box { background: white; padding: 18px; border-radius: 12px; width: 300px; }
   </style>
 </head>
 <body>
-  <div id="login-screen">
-    <h2>Введите пароль для доступа</h2>
-    <input type="password" id="admin-password" placeholder="Пароль" onkeydown="if(event.key==='Enter') checkPassword()">
-    <button onclick="checkPassword()">Войти</button>
+  <div id="auth">
+    <div id="auth-box">
+      <h3>Вход в админ-панель</h3>
+      <input id="pass" type="password" placeholder="Пароль" style="width:100%;padding:8px;margin-bottom:8px;"/>
+      <button id="login" style="width:100%;padding:8px;">Войти</button>
+      <small>Демо-пароль: <b>1234</b></small>
+    </div>
   </div>
 
-  <header>🗺 Админ-панель: точки на карте</header>
-  <main>
-    <section id="controls">
-      <h2>Добавить / Редактировать точку</h2>
-      <form id="point-form">
-        <input type="hidden" id="edit-index">
-        <label>X координата:<input type="number" id="x"></label>
-        <label>Y координата:<input type="number" id="y"></label>
-        <label>Ссылка на картинку:<input type="text" id="image"></label>
-        <label>Описание:
-          <textarea id="text" list="recent-texts"></textarea>
-          <datalist id="recent-texts"></datalist>
-        </label>
-        <label>Категория:
-          <input type="text" id="category" list="category-list">
-          <datalist id="category-list">
-            <option>Памятник</option>
-            <option>Парковая зона</option>
-            <option>Здание</option>
-            <option>Инфраструктура</option>
-          </datalist>
-        </label>
-        <label>Теги (через запятую):<input type="text" id="tags"></label>
-        <label>Иконка:
-          <select id="icon">
-            <option value="default">🔴 По умолчанию</option>
-            <option value="blue">🔵 Синяя</option>
-            <option value="green">🟢 Зелёная</option>
-            <option value="yellow">🟡 Жёлтая</option>
-            <option value="black">⚫ Чёрная</option>
-          </select>
-        </label>
-        <button type="submit">💾 Сохранить</button>
-        <button type="button" onclick="resetForm()">↩ Очистить</button>
-      </form>
+  <section id="panel">
+    <h1>Управление точками</h1>
+    <form id="point-form">
+      <input type="hidden" id="idx" />
+      <div class="row">
+        <input id="x" type="number" placeholder="X" required />
+        <input id="y" type="number" placeholder="Y" required />
+      </div>
+      <input id="title" placeholder="Название / описание" required />
+      <input id="image" placeholder="URL изображения" />
+      <input id="category" placeholder="Категория" />
+      <input id="tags" placeholder="Теги через запятую" />
+      <select id="icon">
+        <option value="default">🔴 default</option>
+        <option value="blue">🔵 blue</option>
+        <option value="green">🟢 green</option>
+        <option value="yellow">🟡 yellow</option>
+        <option value="black">⚫ black</option>
+      </select>
+      <button type="submit">Сохранить точку</button>
+      <button type="button" class="secondary" id="clear">Очистить форму</button>
+    </form>
 
-      <h2>Список точек</h2>
-      <label>Фильтр по тегу:
-        <input type="text" id="tagFilter" oninput="renderTable()" placeholder="например: лавочка">
-      </label>
-      <table id="points-table">
-        <thead>
-          <tr>
-            <th>#</th><th>X</th><th>Y</th><th>Фото</th><th>Описание</th>
-            <th>Категория</th><th>Теги</th><th>Иконка</th><th>Действия</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div class="row">
+      <button id="save" type="button">Сохранить в браузер</button>
+      <button id="export" type="button" class="secondary">Экспорт JSON</button>
+    </div>
+    <input id="import" type="file" accept="application/json" />
+    <p><a href="index.html">Открыть карту</a></p>
 
-      <button onclick="saveJSON()">💾 Обновить points.json</button>
-      <input type="file" accept="application/json" onchange="uploadJSON(this)">
-    </section>
-    <section id="map-preview">
-      <img id="map-image" src="tiles/tile_0_0.jpg" alt="Карта">
-    </section>
-  </main>
+    <div id="list"></div>
+  </section>
+
+  <section id="map-wrap">
+    <div id="viewport">
+      <div id="stage"><div id="map"></div></div>
+    </div>
+  </section>
 
 <script>
+const MAP_WIDTH = 4200;
+const MAP_HEIGHT = 3000;
+const STORAGE_KEY = 'vault-map-points';
+const colors = { default: '#dc2626', blue: '#2563eb', green: '#16a34a', yellow: '#ca8a04', black: '#111827' };
+
+const viewport = document.getElementById('viewport');
+const stage = document.getElementById('stage');
+const mapEl = document.getElementById('map');
+const form = document.getElementById('point-form');
+const listEl = document.getElementById('list');
+
 let points = [];
-let recentTexts = [];
-const mapSize = 28928;
-const preview = document.getElementById('map-preview');
+let scale = 0.28;
+let tx = 24;
+let ty = 24;
+let pan = false;
+let panX = 0;
+let panY = 0;
 
-function checkPassword() {
-  const password = document.getElementById('admin-password').value;
-  if (password === '1234') {
-    document.getElementById('login-screen').style.display = 'none';
-  } else {
-    alert('Неверный пароль!');
-  }
+function applyTransform() { stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; }
+
+function loadData() {
+  const local = localStorage.getItem(STORAGE_KEY);
+  if (local) { points = JSON.parse(local); render(); return; }
+  fetch('points.json').then(r => r.json()).then(data => { points = data; render(); }).catch(() => render());
 }
 
-preview.addEventListener('click', (e) => {
-  const rect = preview.getBoundingClientRect();
-  const x = Math.round(((e.clientX - rect.left) / rect.width) * mapSize);
-  const y = Math.round(((e.clientY - rect.top) / rect.height) * mapSize);
-  document.getElementById('x').value = x;
-  document.getElementById('y').value = y;
-});
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(points));
+  alert('Сохранено в localStorage');
+}
 
-function renderTable() {
-  const filter = document.getElementById('tagFilter')?.value?.toLowerCase() || '';
-  const tbody = document.querySelector('#points-table tbody');
-  tbody.innerHTML = '';
-  preview.querySelectorAll('.preview-marker').forEach(m => m.remove());
-
+function render() {
+  mapEl.querySelectorAll('.marker').forEach(x => x.remove());
   points.forEach((p, i) => {
-    const tagMatch = filter === '' || (p.tags || []).some(tag => tag.toLowerCase().includes(filter));
-    if (!tagMatch) return;
-
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${p.x}</td>
-      <td>${p.y}</td>
-      <td><img src="${p.image}" width="50"></td>
-      <td>${p.text}</td>
-      <td>${p.category || ''}</td>
-      <td>${(p.tags || []).join(', ')}</td>
-      <td>${p.icon || 'default'}</td>
-      <td>
-        <button onclick="editPoint(${i})">✏️</button>
-        <button onclick="deletePoint(${i})">🗑</button>
-      </td>
-    `;
-    tbody.appendChild(row);
-
     const marker = document.createElement('div');
-    marker.className = 'preview-marker';
-    marker.style.left = (p.x / mapSize * 100) + '%';
-    marker.style.top = (p.y / mapSize * 100) + '%';
-    marker.title = p.text;
-    marker.draggable = true;
+    marker.className = 'marker';
+    marker.style.left = `${p.x}px`;
+    marker.style.top = `${p.y}px`;
+    marker.style.background = colors[p.icon] || colors.default;
+    marker.title = p.text || 'Точка';
 
-    const colors = {
-      blue: 'blue',
-      green: 'green',
-      yellow: 'gold',
-      black: '#000',
-      default: 'red'
-    };
-    marker.style.background = colors[p.icon] || 'red';
-
-    let offsetX = 0, offsetY = 0;
-
-    marker.addEventListener('dragstart', e => {
-      offsetX = e.offsetX;
-      offsetY = e.offsetY;
+    marker.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      const move = (evt) => {
+        const rect = viewport.getBoundingClientRect();
+        const worldX = (evt.clientX - rect.left - tx) / scale;
+        const worldY = (evt.clientY - rect.top - ty) / scale;
+        p.x = Math.max(0, Math.min(MAP_WIDTH, Math.round(worldX)));
+        p.y = Math.max(0, Math.min(MAP_HEIGHT, Math.round(worldY)));
+        marker.style.left = `${p.x}px`;
+        marker.style.top = `${p.y}px`;
+      };
+      const up = () => {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+        renderList();
+      };
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
     });
 
-    marker.addEventListener('dragend', e => {
-      const rect = preview.getBoundingClientRect();
-      const relX = e.clientX - rect.left - offsetX;
-      const relY = e.clientY - rect.top - offsetY;
-      const normX = Math.round((relX / rect.width) * mapSize);
-      const normY = Math.round((relY / rect.height) * mapSize);
-      points[i].x = normX;
-      points[i].y = normY;
-      document.getElementById('x').value = normX;
-      document.getElementById('y').value = normY;
-      renderTable();
-    });
-
-    marker.onclick = () => editPoint(i);
-    preview.appendChild(marker);
+    marker.addEventListener('click', () => editPoint(i));
+    mapEl.appendChild(marker);
   });
-
-  const textList = document.getElementById('recent-texts');
-  textList.innerHTML = recentTexts.map(t => `<option value="${t}">`).join('');
+  renderList();
 }
 
-document.getElementById('point-form').addEventListener('submit', function(e) {
+function renderList() {
+  const rows = points.map((p, i) => `<tr><td>${i + 1}</td><td>${p.text || ''}</td><td>${p.x}, ${p.y}</td><td><button onclick="editPoint(${i})">✏️</button><button onclick="deletePoint(${i})">🗑️</button></td></tr>`).join('');
+  listEl.innerHTML = `<table><thead><tr><th>#</th><th>Название</th><th>XY</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+window.editPoint = (i) => {
+  const p = points[i];
+  idx.value = i;
+  x.value = p.x;
+  y.value = p.y;
+  title.value = p.text || '';
+  image.value = p.image || '';
+  category.value = p.category || '';
+  tags.value = (p.tags || []).join(', ');
+  icon.value = p.icon || 'default';
+};
+
+window.deletePoint = (i) => {
+  if (!confirm('Удалить точку?')) return;
+  points.splice(i, 1);
+  render();
+};
+
+form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const x = parseInt(document.getElementById('x').value);
-  const y = parseInt(document.getElementById('y').value);
-  const image = document.getElementById('image').value;
-  const text = document.getElementById('text').value;
-  const category = document.getElementById('category').value;
-  const tags = document.getElementById('tags').value.split(',').map(t => t.trim());
-  const icon = document.getElementById('icon').value;
-  const index = document.getElementById('edit-index').value;
-
-  if (text && !recentTexts.includes(text)) {
-    recentTexts.unshift(text);
-    if (recentTexts.length > 10) recentTexts.pop();
-  }
-
-  const point = { x, y, image, text, category, tags, icon };
-
-  if (index !== '') {
-    points[index] = point;
-  } else {
-    points.push(point);
-  }
-
-  resetForm();
-  renderTable();
+  const point = {
+    x: Number(x.value),
+    y: Number(y.value),
+    text: title.value.trim(),
+    image: image.value.trim(),
+    category: category.value.trim(),
+    tags: tags.value.split(',').map(v => v.trim()).filter(Boolean),
+    icon: icon.value
+  };
+  const id = idx.value;
+  if (id !== '') points[Number(id)] = point; else points.push(point);
+  form.reset();
+  idx.value = '';
+  render();
 });
 
-function editPoint(i) {
-  const p = points[i];
-  document.getElementById('x').value = p.x;
-  document.getElementById('y').value = p.y;
-  document.getElementById('image').value = p.image;
-  document.getElementById('text').value = p.text;
-  document.getElementById('category').value = p.category || '';
-  document.getElementById('tags').value = (p.tags || []).join(', ');
-  document.getElementById('icon').value = p.icon || 'default';
-  document.getElementById('edit-index').value = i;
-}
+document.getElementById('clear').addEventListener('click', () => { form.reset(); idx.value = ''; });
+document.getElementById('save').addEventListener('click', saveData);
 
-function deletePoint(i) {
-  if (confirm('Удалить эту точку?')) {
-    points.splice(i, 1);
-    renderTable();
-  }
-}
-
-function resetForm() {
-  document.getElementById('point-form').reset();
-  document.getElementById('edit-index').value = '';
-}
-
-function uploadJSON(input) {
-  const file = input.files[0];
-  const reader = new FileReader();
-  reader.onload = function() {
-    points = JSON.parse(reader.result);
-    renderTable();
-  };
-  reader.readAsText(file);
-}
-
-function saveJSON() {
+document.getElementById('export').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(points, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'points.json';
   a.click();
-}
+});
 
-fetch('points.json')
-  .then(res => res.json())
-  .then(json => {
-    points = json;
-    renderTable();
-  })
-  .catch(err => console.warn('points.json не найден или не загружен'));
+document.getElementById('import').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { points = JSON.parse(r.result); render(); };
+  r.readAsText(file);
+});
+
+viewport.addEventListener('click', (e) => {
+  const rect = viewport.getBoundingClientRect();
+  const worldX = (e.clientX - rect.left - tx) / scale;
+  const worldY = (e.clientY - rect.top - ty) / scale;
+  x.value = Math.max(0, Math.min(MAP_WIDTH, Math.round(worldX)));
+  y.value = Math.max(0, Math.min(MAP_HEIGHT, Math.round(worldY)));
+});
+
+viewport.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const old = scale;
+  const delta = e.deltaY < 0 ? 1.12 : 0.88;
+  scale = Math.max(0.2, Math.min(3, scale * delta));
+  const rect = viewport.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  tx = px - (px - tx) * (scale / old);
+  ty = py - (py - ty) * (scale / old);
+  applyTransform();
+}, { passive: false });
+
+viewport.addEventListener('mousedown', (e) => {
+  pan = true;
+  panX = e.clientX - tx;
+  panY = e.clientY - ty;
+  viewport.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', (e) => {
+  if (!pan) return;
+  tx = e.clientX - panX;
+  ty = e.clientY - panY;
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { pan = false; viewport.style.cursor = 'grab'; });
+
+login.addEventListener('click', () => {
+  if (pass.value === '1234') auth.style.display = 'none'; else alert('Неверный пароль');
+});
+pass.addEventListener('keydown', (e) => { if (e.key === 'Enter') login.click(); });
+
+applyTransform();
+loadData();
 </script>
 </body>
 </html>
